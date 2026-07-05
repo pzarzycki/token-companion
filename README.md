@@ -67,7 +67,7 @@ irm https://raw.githubusercontent.com/pzarzycki/token-companion/main/install.ps1
 Build a specific tag:
 
 ```bash
-npx token-companion --version v0.1.2
+npx token-companion --version v0.1.3
 ```
 
 ```powershell
@@ -77,8 +77,28 @@ npx token-companion --dry-run
 Useful options:
 
 - `--dry-run`: print checks, build commands, and install target.
-- `--package-only`: build packages but do not install or run the installer.
-- `--install-dir <path>`: macOS app destination.
+- `--package-only`: build packages but do not copy or install the built app.
+- `--install-dir <path>`: macOS `.app` destination. Windows uses one-click NSIS install and rejects this option.
+
+What the npm package actually is:
+
+- `token-companion` on npm is a small bootstrapper package, not the Electron app bundle and not the full source tree.
+- `npx token-companion` downloads the matching GitHub source tag, runs the checked-in installer, builds the app locally, and then installs the built desktop app for the current OS.
+- The npm package exists to give users a one-line entry point with normal npm tooling while keeping the app itself open-source and locally built.
+
+Why npmjs.com shows `npm i token-companion`:
+
+- That install box is npm's generic package-page UI for installable packages.
+- It is not the recommended command for this package.
+- For Token Companion, the intended command is `npx token-companion`.
+
+How updates work:
+
+- `npx token-companion` is an installer entry point, not an auto-updater for an already running desktop app.
+- Running `npx token-companion@latest` fetches and runs the latest published installer package.
+- Running `npx token-companion@<version>` fetches that exact installer version.
+- npm may reuse a cached package when you rerun the same unpinned command. If you need the newest published installer immediately, use `npx token-companion@latest`.
+- If the newer installer builds a newer app successfully, the normal platform install step replaces the prior local app install.
 
 ### Optional release binaries
 
@@ -86,9 +106,9 @@ GitHub Releases still provide unsigned binaries for convenience. They are useful
 
 | Platform | Artifact | Notes |
 |---|---|---|
-| macOS | `.dmg` | Unsigned disk image. |
-| Windows | `Setup.exe` | Built with Squirrel.Windows; SmartScreen warning expected until signed. |
-| Linux | `.deb` / `.rpm` | Native distro packages for Debian/Ubuntu and Fedora/RHEL style systems. |
+| macOS | `.dmg` / `.zip` | Unsigned artifacts built by `electron-builder`. |
+| Windows | NSIS `.exe` installer | Per-user installer with Start Menu and uninstall entry; SmartScreen warning expected until signed. |
+| Linux | `.deb` / `.rpm` | Native distro packages built by `electron-builder`. |
 
 Release downloads: [GitHub Releases](https://github.com/pzarzycki/token-companion/releases/latest).
 Tagged releases include `SHA256SUMS` for the uploaded artifacts.
@@ -111,16 +131,15 @@ Validation rules in `scripts/verify.mjs`:
 
 ## Building From Source
 
-Token Companion uses [Electron Forge](https://www.electronforge.io/) with the stable webpack pipeline, React 19, Astro 7 for docs, and TypeScript 6. Builds are platform-local because `classic-level` is a native dependency and the distributables are OS-specific.
+Token Companion uses [Electron Forge](https://www.electronforge.io/) for development packaging, [electron-builder](https://www.electron.build/) for release artifacts, React 19, Astro 7 for docs, and TypeScript 6. Builds are platform-local because `classic-level` is a native dependency and the distributables are OS-specific.
 
 ### Prerequisites
 
 - Node.js 24 LTS or newer with npm and npx
 - macOS: Xcode Command Line Tools
-- Windows: Visual Studio Build Tools with Desktop development with C++
 - Linux: `build-essential`, Python 3, `fakeroot`, and `rpm`
 
-The source installer checks these prerequisites before building. It fails with the original command output if dependency install, verification, or packaging fails.
+The source installer checks these prerequisites before building. It fails with the original command output if dependency install, typecheck, or packaging fails.
 
 ### Install
 
@@ -145,21 +164,23 @@ npm run dev
 # Package the current OS without making installers
 npm run package
 
-# Make all distributables for the current OS
-npm run make
+# Build current-platform distributables with electron-builder
+npm run dist
 
-# Platform-specific makers when you are on that OS
-npm run make:mac
-npm run make:win
-npm run make:linux
+# Platform-specific distributable commands when you are on that OS
+npm run dist:mac
+npm run dist:win
+npm run dist:linux
 ```
 
-Output lands in `out/` and `out/make/`.
+Backward-compatible aliases remain available: `npm run make`, `npm run make:mac`, `npm run make:win`, and `npm run make:linux`.
+
+Packaged app output lands in `out/`. Final distributables land in `out/dist/`.
 
 Packaging targets:
 
-- macOS: `dmg`
-- Windows: Squirrel `Setup.exe` + `.nupkg` + `RELEASES`
+- macOS: `dmg` + `zip`
+- Windows: NSIS installer `.exe`
 - Linux: `deb` + `rpm`
 
 ### Verify
@@ -169,6 +190,48 @@ npm run verify
 npm run audit:prod
 npm run audit
 ```
+
+`npm run verify` validates parser and pricing logic against local Claude/Codex data. It is for contributors and maintainers, not part of the end-user installer path.
+
+## Release And Publish
+
+The release source of truth is a version tag on `main`.
+
+Versioning rules:
+
+- Keep the desktop app version in the root [package.json](package.json) aligned with the installer package version in [packages/npm-installer/package.json](packages/npm-installer/package.json).
+- Create one tag per real release: `vX.Y.Z`.
+- Do not publish from an untagged commit if you want `npx token-companion` to resolve a matching source tarball cleanly.
+
+Steady-state release flow:
+
+1. Update both package versions to the same `X.Y.Z`.
+2. Merge the release commit to `main`.
+3. Push `main`.
+4. Create and push tag `vX.Y.Z`.
+5. GitHub Actions runs `.github/workflows/build.yml`.
+6. The workflow verifies that the tag matches both package versions.
+7. The workflow builds platform artifacts, publishes the GitHub Release, and publishes `packages/npm-installer` to npm through Trusted Publishing.
+
+Trusted Publishing setup:
+
+- npm package: `token-companion`
+- Publisher: `GitHub Actions`
+- GitHub owner: `pzarzycki`
+- Repository: `token-companion`
+- Workflow filename: `build.yml`
+- Allowed action: `Allow npm publish`
+
+Why the installer downloads GitHub source:
+
+- The published npm package intentionally stays small and only contains the installer entry point.
+- The real application source is taken from the matching GitHub tag tarball such as `https://github.com/pzarzycki/token-companion/archive/refs/tags/v0.1.3.tar.gz`.
+- This keeps the published npm artifact small, makes the release source explicit, and ensures the local build uses the same tagged source as the GitHub release.
+
+Recovery path:
+
+- Manual `npm publish` should be treated as recovery-only when fixing publishing setup.
+- Normal releases should come from the tag-triggered GitHub Actions workflow so npm, GitHub Release artifacts, and the source tag stay aligned.
 
 ## Security Posture
 
@@ -205,7 +268,7 @@ src/
 
 ## License
 
-[MIT](LICENSE) © Pawel Zarzycki
+[MIT](LICENSE)
 
 <div align="center">
 <sub>Built with Electron, Electron Forge, webpack, React, and TypeScript.</sub>

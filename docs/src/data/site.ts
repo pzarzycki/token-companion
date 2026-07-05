@@ -116,7 +116,7 @@ export const platformCards = [
     id: "windows",
     name: "Windows",
     packageType: "npx source build",
-    note: "Run the npx installer, which builds the Squirrel installer locally and runs the per-user setup.",
+    note: "Run the npx installer, which builds a local NSIS installer and runs a per-user install with Start Menu and uninstall support.",
   },
   {
     id: "linux",

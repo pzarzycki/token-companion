@@ -8,7 +8,7 @@ const windowsInstall = `irm https://raw.githubusercontent.com/pzarzycki/token-co
 
 const sourceSteps = [
   "Downloads the selected source tag or branch into a local build cache.",
-  "Runs npm ci, typecheck, parser verification, and the platform Electron Forge maker.",
+  "Runs npm ci, typecheck, and the platform electron-builder packaging command.",
   "Installs the locally built app or package for the current operating system.",
   "Prints original command output when something fails.",
 ];
@@ -28,12 +28,12 @@ const platformBuilds = [
   {
     id: "windows",
     name: "Windows",
-    target: "Local Squirrel Setup.exe",
-    requirements: ["Node.js 24 LTS and npm", "Visual Studio Build Tools with Desktop development with C++"],
+    target: "Per-user NSIS install by default",
+    requirements: ["Node.js 24 LTS and npm"],
     notes: [
-      "Builds the Squirrel installer locally and runs it.",
-      "The install is per-user and should not require administrator rights.",
-      "Downloaded unsigned release installers can still trigger SmartScreen.",
+      "Builds a local NSIS installer and runs it.",
+      "The install is per-user, shows up in Start Menu, and creates an uninstall entry.",
+      "Unsigned Windows binaries can still trigger SmartScreen.",
     ],
   },
   {
@@ -44,7 +44,7 @@ const platformBuilds = [
     notes: [
       "Builds native Debian/Ubuntu and Fedora/RHEL style packages.",
       "Installs with apt, dnf, or rpm when possible.",
-      "Use --package-only if you only want the package file under out/make.",
+      "Use --package-only if you only want the package file under out/dist.",
     ],
   },
 ];
@@ -52,18 +52,36 @@ const platformBuilds = [
 const releaseArtifacts = [
   {
     platform: "macOS",
-    artifact: ".dmg",
-    warning: "Unsigned disk image. Gatekeeper first-launch warning is expected.",
+    artifact: ".dmg / .zip",
+    warning: "Unsigned macOS artifacts. Gatekeeper first-launch warning is expected.",
   },
   {
     platform: "Windows",
-    artifact: "Setup.exe",
-    warning: "Unsigned Squirrel installer. SmartScreen warning is expected.",
+    artifact: "NSIS .exe installer",
+    warning: "Unsigned NSIS installer. SmartScreen warning is expected.",
   },
   {
     platform: "Linux",
     artifact: ".deb / .rpm",
     warning: "Native packages for common Debian/RPM distributions when a release is published.",
+  },
+];
+
+const installFaq = [
+  {
+    question: "Why does npmjs.com show npm i token-companion?",
+    answer:
+      "That install box is generic npm package-page UI. Token Companion is meant to be run with npx so the installer package can execute.",
+  },
+  {
+    question: "Does npx token-companion contain the app source?",
+    answer:
+      "No. The npm package is a small bootstrapper. It downloads the matching GitHub source tag, then builds the Electron app locally on your machine.",
+  },
+  {
+    question: "Will rerunning npx token-companion update an older install?",
+    answer:
+      "It rebuilds and reruns the platform installer. If npm resolves a newer installer package and the local build succeeds, the newer app install replaces the older one. Use npx token-companion@latest when you want the newest installer package immediately.",
   },
 ];
 ---
@@ -158,7 +176,7 @@ const releaseArtifacts = [
         </div>
         <div>
           <p class="command-label">Build a tag</p>
-          <pre class="code-block"><code>{`npx token-companion --version v0.1.2`}</code></pre>
+          <pre class="code-block"><code>{`npx token-companion --version v0.1.3`}</code></pre>
         </div>
         <div>
           <p class="command-label">Fallback scripts</p>
@@ -170,7 +188,7 @@ ${windowsInstall}`}</code></pre>
       <ul class="detail-list install-option-list">
         <li><code>--dry-run</code> prints checks, commands, and targets without building.</li>
         <li><code>--package-only</code> builds packages without installing them.</li>
-        <li><code>--install-dir &lt;path&gt;</code> changes the macOS app destination.</li>
+        <li><code>--install-dir &lt;path&gt;</code> changes the macOS app destination. Windows one-click NSIS install does not support it.</li>
       </ul>
     </div>
   </section>
@@ -296,11 +314,29 @@ cd token-companion
 npm ci`}</code></pre>
         </div>
         <div>
-          <p class="command-label">Verify and build</p>
+          <p class="command-label">Build distributables</p>
           <pre class="code-block"><code>{`npm run typecheck
-npm run verify
-npm run make`}</code></pre>
+npm run dist`}</code></pre>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install-faq" class="section">
+    <div class="container">
+      <div class="section-heading">
+        <p class="eyebrow">FAQ</p>
+        <h2>Installer behavior in plain terms.</h2>
+      </div>
+
+      <div class="detail-grid">
+        {installFaq.map((item) => (
+          <article class="note-panel">
+            <p class="eyebrow">Question</p>
+            <h3>{item.question}</h3>
+            <p>{item.answer}</p>
+          </article>
+        ))}
       </div>
     </div>
   </section>

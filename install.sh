@@ -15,8 +15,8 @@ Usage:
 Options:
   --version <ref>        Git tag or branch to build. Defaults to latest release, then main.
   --dry-run              Print commands and install targets without building.
-  --package-only         Build packages but do not install or launch installers.
-  --install-dir <path>   macOS app destination. Defaults to ~/Applications.
+  --package-only         Build packages but do not copy or install the built app.
+  --install-dir <path>   macOS app destination. Defaults to ~/Applications. Ignored on Windows.
   --help                 Show this help.
 
 Environment:

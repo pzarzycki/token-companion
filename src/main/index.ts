@@ -12,15 +12,14 @@ import { isAllowedSessionFile } from './sources'
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 
-if (require('electron-squirrel-startup')) {
-  app.quit()
-}
-
-const SQUIRREL_APP_NAME = 'TokenCompanion'
+// Some Windows environments fail to initialize Chromium's GPU process and end up
+// with a blank renderer surface or a fatal startup exit. This app is mostly
+// charts and tables, so software rendering is an acceptable fallback.
+app.disableHardwareAcceleration()
 
 app.setName('Token Companion')
 if (process.platform === 'win32') {
-  app.setAppUserModelId(`com.squirrel.${SQUIRREL_APP_NAME}.${SQUIRREL_APP_NAME}`)
+  app.setAppUserModelId('com.pawelzarzycki.tokencompanion')
 }
 
 function isAllowedExternalUrl(rawUrl: string): boolean {

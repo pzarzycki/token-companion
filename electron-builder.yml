@@ -1,0 +1,34 @@
+appId: com.pawelzarzycki.tokencompanion
+productName: Token Companion
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+directories:
+  output: out/dist
+  buildResources: resources
+win:
+  target:
+    - nsis
+  executableName: token-companion
+  icon: resources/icon.ico
+nsis:
+  oneClick: true
+  perMachine: false
+  allowElevation: false
+  createDesktopShortcut: false
+  createStartMenuShortcut: true
+  deleteAppDataOnUninstall: false
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.developer-tools
+  icon: resources/icon.icns
+linux:
+  target:
+    - deb
+    - rpm
+  category: Development
+  executableName: token-companion
+  maintainer: Pawel Zet
+  synopsis: Local analyzer for token spend across Claude and Codex sessions
+  description: Local analyzer for token spend across Claude and Codex sessions
+  icon: resources/icon.png

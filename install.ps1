@@ -22,8 +22,8 @@ Usage:
 Options:
   -Version <ref>       Git tag or branch to build. Defaults to latest release, then main.
   -DryRun              Print commands and install targets without building.
-  -PackageOnly         Build packages but do not install or launch installers.
-  -InstallDir <path>   Reserved for parity with macOS/Linux.
+  -PackageOnly         Build packages but do not copy or install the built app.
+  -InstallDir <path>   macOS only. Windows uses one-click NSIS install.
   -Help                Show this help.
 
 Environment:

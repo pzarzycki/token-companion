@@ -21,13 +21,13 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            script: make:mac
+            script: dist:mac
             artifact: macos
           - os: windows-latest
-            script: make:win
+            script: dist:win
             artifact: windows
           - os: ubuntu-latest
-            script: make:linux
+            script: dist:linux
             artifact: linux
 
     steps:
@@ -76,7 +76,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: token-companion-${{ matrix.artifact }}
-          path: out/make/**/*
+          path: out/dist/**/*
           if-no-files-found: warn
           retention-days: 14
 
@@ -119,6 +119,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -149,5 +150,3 @@ jobs:
           fi
           npm publish
         working-directory: packages/npm-installer
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

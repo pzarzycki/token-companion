@@ -8,7 +8,7 @@ import * as tar from 'tar'
 
 const repo = 'pzarzycki/token-companion'
 const args = process.argv.slice(2)
-const npmPackageVersion = process.env.npm_package_version ?? '0.1.2'
+const npmPackageVersion = process.env.npm_package_version ?? '0.1.3'
 const defaultRef = `v${npmPackageVersion}`
 const version = parseVersion(args)
 const localSourceOverride = process.env.TOKEN_COMPANION_SOURCE_DIR

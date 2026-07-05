@@ -49,8 +49,8 @@ Usage:
 
 Options:
   --dry-run              Print commands and install targets without building.
-  --package-only         Build packages but do not install or launch installers.
-  --install-dir <path>   macOS app destination. Defaults to ~/Applications.
+  --package-only         Build packages but do not copy/install the built app.
+  --install-dir <path>   Install destination. Supported on macOS only.
   --help                 Show this help.
 `)
 }
@@ -154,17 +154,6 @@ function assertPrereqs() {
     throw new Error('Xcode Command Line Tools are required. Install them with: xcode-select --install')
   }
 
-  if (platform === 'win32') {
-    const vswherePaths = [
-      join(process.env['ProgramFiles(x86)'] ?? '', 'Microsoft Visual Studio', 'Installer', 'vswhere.exe'),
-      join(process.env.ProgramFiles ?? '', 'Microsoft Visual Studio', 'Installer', 'vswhere.exe')
-    ].filter(Boolean)
-    const hasVisualStudio = hasCommand('where', ['cl']) || vswherePaths.some((path) => existsSync(path))
-    if (!hasVisualStudio) {
-      throw new Error('Visual Studio Build Tools with Desktop development with C++ are required.')
-    }
-  }
-
   if (platform === 'linux') {
     const missing = []
     if (!hasCommand('python3')) missing.push('python3')
@@ -178,9 +167,9 @@ function assertPrereqs() {
 }
 
 function makeScriptName() {
-  if (platform === 'darwin') return 'make:mac'
-  if (platform === 'win32') return 'make:win'
-  return 'make:linux'
+  if (platform === 'darwin') return 'dist:mac'
+  if (platform === 'win32') return 'dist:win'
+  return 'dist:linux'
 }
 
 async function findFiles(start, predicate) {
@@ -231,18 +220,27 @@ async function installMacApp() {
   console.log(`Installed Token Companion to ${dest}`)
 }
 
-async function installWindowsSetup() {
-  const setups = await findFiles(join(root, 'out'), (file) => basename(file).endsWith('Setup.exe'))
-  if (!setups.length) throw new Error('Could not find Squirrel Setup.exe under out/')
-  const setup = setups[0]
-  console.log(`Windows installer: ${setup}`)
+async function findWindowsInstaller() {
+  const installers = await findFiles(join(root, 'out', 'dist'), (file) => file.endsWith('.exe'))
+  const match = installers.find((file) => basename(file).toLowerCase().includes('token companion'))
+  if (!match) throw new Error('Could not find Windows NSIS installer under out/dist/')
+  return match
+}
+
+async function runWindowsInstaller() {
+  if (options.installDir) {
+    throw new Error('--install-dir is not supported on Windows because the NSIS installer runs in one-click mode.')
+  }
+
+  const installer = await findWindowsInstaller()
+  console.log(`Windows installer: ${installer}`)
   if (options.dryRun || options.packageOnly) return
-  run(setup, [])
+  run(installer, [])
 }
 
 async function installLinuxPackage() {
-  const packages = await findFiles(join(root, 'out'), (file) => file.endsWith('.deb') || file.endsWith('.rpm'))
-  if (!packages.length) throw new Error('Could not find .deb or .rpm package under out/')
+  const packages = await findFiles(join(root, 'out', 'dist'), (file) => file.endsWith('.deb') || file.endsWith('.rpm'))
+  if (!packages.length) throw new Error('Could not find .deb or .rpm package under out/dist/')
 
   const deb = packages.find((file) => file.endsWith('.deb'))
   const rpm = packages.find((file) => file.endsWith('.rpm'))
@@ -268,15 +266,18 @@ async function installBuiltArtifact() {
       const installDir = resolve(options.installDir ?? join(homedir(), 'Applications'))
       console.log(`Would copy Token Companion.app to ${join(installDir, 'Token Companion.app')}`)
     } else if (platform === 'win32') {
-      console.log('Would run the locally built Squirrel Setup.exe from out/make.')
+      if (options.installDir) {
+        throw new Error('--install-dir is not supported on Windows because the NSIS installer runs in one-click mode.')
+      }
+      console.log('Would run the locally built Windows NSIS installer from out/dist.')
     } else {
-      console.log('Would install the locally built .deb or .rpm package from out/make.')
+      console.log('Would install the locally built .deb or .rpm package from out/dist.')
     }
     return
   }
 
   if (platform === 'darwin') await installMacApp()
-  else if (platform === 'win32') await installWindowsSetup()
+  else if (platform === 'win32') await runWindowsInstaller()
   else await installLinuxPackage()
 }
 
@@ -296,7 +297,6 @@ async function main() {
 
   run('npm', installCommand())
   run('npm', ['run', 'typecheck'])
-  run('npm', ['run', 'verify'])
   run('npm', ['run', makeScriptName()], {
     env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
   })

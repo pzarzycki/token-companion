@@ -2,17 +2,9 @@ import type { Configuration } from 'webpack'
 import { plugins } from './webpack.plugins'
 import { makeTsRule, sharedResolve } from './webpack.rules'
 
-const rendererRules = [
-  makeTsRule('tsconfig.web.json'),
-  {
-    test: /\.css$/,
-    use: ['style-loader', 'css-loader']
-  }
-]
-
-export const rendererConfig: Configuration = {
+export const preloadConfig: Configuration = {
   module: {
-    rules: rendererRules
+    rules: [makeTsRule('tsconfig.node.json')]
   },
   plugins,
   resolve: sharedResolve
