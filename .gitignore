@@ -9,13 +9,9 @@ build/
 site/
 *.tsbuildinfo
 
-# Electron/electron-builder generated files
+# Packaged release artifacts
 *.dmg
 *.zip
-*.AppImage
-*.blockmap
-builder-debug.yml
-builder-effective-config.yaml
 
 # Test and coverage output
 coverage/
@@ -35,8 +31,19 @@ lerna-debug.log*
 # Runtime caches
 .cache/
 .vite/
+.webpack/
+.astro/
+docs/.astro/
+.npm-cache/
 .npm/
 .eslintcache
+
+# Packaged artifacts
+*.exe
+*.nupkg
+*.deb
+*.rpm
+RELEASES
 
 # Environment and local config
 .env

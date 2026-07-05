@@ -1,5 +1,5 @@
 """
-Generate resources/icon.icns + icon.png for Token Companion.
+Generate resources/icon.icns + icon.ico + icon.png for Token Companion.
 Pure Python (stdlib only) — renders a 1024x1024 RGBA canvas, then packs
 a full multi-resolution ICNS.
 
@@ -378,6 +378,38 @@ def make_icns(canvas_1024, out_path):
         f.write(b'icns' + struct.pack(">I", total) + chunks)
     print(f"Wrote {out_path}  ({total} bytes, {len(types)} sizes)")
 
+def make_ico(canvas_1024, out_path):
+    sizes = [16, 32, 48, 64, 128, 256]
+    images = []
+    for size in sizes:
+        scaled = downscale(canvas_1024, size)
+        images.append((size, encode_png(scaled)))
+
+    directory = struct.pack('<HHH', 0, 1, len(images))
+    entries = b''
+    offset = 6 + 16 * len(images)
+    blobs = b''
+    for size, png in images:
+        width = 0 if size == 256 else size
+        height = 0 if size == 256 else size
+        entries += struct.pack(
+            '<BBBBHHII',
+            width,
+            height,
+            0,
+            0,
+            1,
+            32,
+            len(png),
+            offset
+        )
+        blobs += png
+        offset += len(png)
+
+    with open(out_path, 'wb') as f:
+        f.write(directory + entries + blobs)
+    print(f"Wrote {out_path}  ({len(images)} sizes)")
+
 # ── main ──────────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
@@ -395,4 +427,5 @@ if __name__ == '__main__':
     print(f"Wrote {png_path}")
 
     make_icns(canvas, os.path.join(resources, 'icon.icns'))
+    make_ico(canvas, os.path.join(resources, 'icon.ico'))
     print("Done.")

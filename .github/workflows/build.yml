@@ -22,13 +22,13 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            script: build:mac
+            script: make:mac
             artifact: macos
           - os: windows-latest
-            script: build:win
+            script: make:win
             artifact: windows
           - os: ubuntu-latest
-            script: build:linux
+            script: make:linux
             artifact: linux
 
     steps:
@@ -38,8 +38,14 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24.14.0
           cache: npm
+
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg fakeroot rpm
 
       # classic-level is a native module — it's compiled from source on install
       # for whichever runner we're on. No cross-compilation; each OS builds its own.
@@ -56,10 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: token-companion-${{ matrix.artifact }}
-          path: |
-            release/*.dmg
-            release/*.exe
-            release/*.AppImage
+          path: out/make/**/*
           if-no-files-found: warn
           retention-days: 14
 

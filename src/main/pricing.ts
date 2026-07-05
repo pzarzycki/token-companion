@@ -1,24 +1,19 @@
 import { app } from 'electron'
 import { join } from 'node:path'
 import { promises as fs } from 'node:fs'
+import defaultPricingJson from '../../resources/pricing.default.json'
 import type { PricingTable, PricingEntry } from '@shared/types'
 
 /**
- * Pricing lives in a user-editable JSON file under userData, seeded on first
- * run from the bundled default. This lets the user correct/add rates without
- * a rebuild.
+ * Pricing lives in a user-editable JSON file under userData, seeded on first run
+ * from a bundled JSON import. This lets the user correct/add rates without a
+ * rebuild and keeps packaging independent from extraResources layouts.
  */
+
+const DEFAULT_PRICING = defaultPricingJson as PricingTable
 
 function userPricingPath(): string {
   return join(app.getPath('userData'), 'pricing.json')
-}
-
-function bundledDefaultPath(): string {
-  // In dev, resources/ sits at the project root; when packaged, electron-builder
-  // copies it to process.resourcesPath/resources.
-  const packaged = join(process.resourcesPath, 'resources', 'pricing.default.json')
-  const dev = join(app.getAppPath(), 'resources', 'pricing.default.json')
-  return app.isPackaged ? packaged : dev
 }
 
 async function readJson<T>(path: string): Promise<T> {
@@ -27,7 +22,7 @@ async function readJson<T>(path: string): Promise<T> {
 }
 
 export async function loadDefaultPricing(): Promise<PricingTable> {
-  return readJson<PricingTable>(bundledDefaultPath())
+  return JSON.parse(JSON.stringify(DEFAULT_PRICING)) as PricingTable
 }
 
 export async function loadPricing(): Promise<PricingTable> {

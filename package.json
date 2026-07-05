@@ -1,77 +1,68 @@
 {
   "name": "token-companion",
+  "productName": "Token Companion",
   "version": "0.1.0",
   "description": "Local analyzer for token spend across Claude and Codex sessions",
-  "main": "out/main/index.js",
+  "main": ".webpack/main",
   "author": "Pawel Zarzycki",
   "license": "MIT",
-  "type": "module",
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build && electron-builder --dir",
-    "build:dist": "electron-vite build && electron-builder",
-    "build:mac": "electron-vite build && electron-builder --mac",
-    "build:win": "electron-vite build && electron-builder --win",
-    "build:linux": "electron-vite build && electron-builder --linux",
+    "dev": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "make:mac": "electron-forge make --platform darwin",
+    "make:win": "electron-forge make --platform win32",
+    "make:linux": "electron-forge make --platform linux",
+    "build": "npm run package",
+    "build:dist": "npm run make",
+    "docs:dev": "astro dev --root docs",
+    "docs:build": "astro build --root docs",
+    "docs:preview": "astro preview --root docs",
+    "audit": "npm audit",
+    "audit:prod": "npm audit --omit=dev",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
-    "classic-level": "^2.0.0"
+    "classic-level": "3.0.0",
+    "electron-squirrel-startup": "1.0.1"
+  },
+  "overrides": {
+    "@electron/rebuild": "4.1.0",
+    "external-editor": "3.1.0",
+    "tar": "7.5.19",
+    "tmp": "0.2.7",
+    "uuid": "11.1.1",
+    "webpack-dev-server": "6.0.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "@vitejs/plugin-react": "^5.2.0",
-    "electron": "^43.0.0",
-    "electron-builder": "^26.15.3",
-    "electron-vite": "^4.0.1",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "recharts": "^3.9.1",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.6"
-  },
-  "build": {
-    "appId": "com.pawelzarzycki.tokencompanion",
-    "productName": "Token Companion",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "out/**/*",
-      "resources/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "resources",
-        "to": "resources"
-      }
-    ],
-    "mac": {
-      "category": "public.app-category.developer-tools",
-      "icon": "resources/icon.icns",
-      "target": [
-        {
-          "target": "dmg",
-          "arch": ["arm64", "x64"]
-        }
-      ]
-    },
-    "win": {
-      "icon": "resources/icon.png",
-      "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        }
-      ]
-    },
-    "linux": {
-      "category": "Development",
-      "icon": "resources/icon.png",
-      "target": ["AppImage"]
-    }
+    "@electron-forge/cli": "7.11.2",
+    "@electron-forge/maker-deb": "7.11.2",
+    "@electron-forge/maker-dmg": "7.11.2",
+    "@electron-forge/maker-rpm": "7.11.2",
+    "@electron-forge/maker-squirrel": "7.11.2",
+    "@electron-forge/plugin-auto-unpack-natives": "7.11.2",
+    "@electron-forge/plugin-fuses": "7.11.2",
+    "@electron-forge/plugin-webpack": "7.11.2",
+    "@electron-forge/shared-types": "7.11.2",
+    "@electron/fuses": "1.8.0",
+    "@types/node": "26.1.0",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vercel/webpack-asset-relocator-loader": "1.10.0",
+    "astro": "7.0.6",
+    "css-loader": "7.1.4",
+    "electron": "43.0.0",
+    "fork-ts-checker-webpack-plugin": "9.1.0",
+    "html-webpack-plugin": "5.6.7",
+    "node-loader": "2.1.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "recharts": "3.9.2",
+    "style-loader": "4.0.0",
+    "ts-loader": "9.6.2",
+    "typescript": "6.0.3",
+    "webpack": "5.108.4",
+    "webpack-cli": "7.2.1"
   }
 }

@@ -1,6 +1,7 @@
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { isAbsolute, join, relative, resolve } from 'node:path'
 import { promises as fs } from 'node:fs'
+import type { SourceId } from '@shared/types'
 
 /** Resolve absolute source paths on this machine. */
 export function sourcePaths() {
@@ -58,3 +59,22 @@ export async function walkFiles(
 }
 
 export const isJsonl = (name: string): boolean => name.endsWith('.jsonl')
+
+function isPathInsideRoot(filePath: string, root: string): boolean {
+  const rel = relative(resolve(root), resolve(filePath))
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+}
+
+export function isAllowedSessionFile(filePath: string, source: SourceId): boolean {
+  if (!isJsonl(filePath)) return false
+
+  const paths = sourcePaths()
+  const root =
+    source === 'codex'
+      ? paths.codexSessions
+      : source === 'claude-3p'
+        ? paths.claude3pTitleGen
+        : paths.claudeProjects
+
+  return isPathInsideRoot(filePath, root)
+}

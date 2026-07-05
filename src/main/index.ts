@@ -7,11 +7,35 @@ import { scanAll } from './scan'
 import { loadPricing, savePricing, resetPricing } from './pricing'
 import { parseSessionEntries } from './parsers/sessionEntries'
 import { parseCodexSessionEntries } from './parsers/codexSessionEntries'
+import { isAllowedSessionFile } from './sources'
 
-// Override the app name so the dock tooltip / menu bar don't show "Electron"
-// in dev. Must run before app.whenReady(). In the packaged build productName
-// already handles this, but calling it here is harmless and keeps dev in sync.
+declare const MAIN_WINDOW_WEBPACK_ENTRY: string
+declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
+
+if (require('electron-squirrel-startup')) {
+  app.quit()
+}
+
+const SQUIRREL_APP_NAME = 'TokenCompanion'
+
 app.setName('Token Companion')
+if (process.platform === 'win32') {
+  app.setAppUserModelId(`com.squirrel.${SQUIRREL_APP_NAME}.${SQUIRREL_APP_NAME}`)
+}
+
+function isAllowedExternalUrl(rawUrl: string): boolean {
+  try {
+    const url = new URL(rawUrl)
+    return url.protocol === 'https:' || url.protocol === 'mailto:'
+  } catch {
+    return false
+  }
+}
+
+function openExternalUrl(rawUrl: string): void {
+  if (!isAllowedExternalUrl(rawUrl)) return
+  void shell.openExternal(rawUrl)
+}
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -22,25 +46,32 @@ function createWindow(): void {
     title: 'Token Companion',
     backgroundColor: '#0f1115',
     webPreferences: {
-      preload: join(__dirname, '../preload/index.mjs'),
+      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false // preload needs Node built-ins via the bridge
+      sandbox: true,
+      webSecurity: true
     }
   })
 
+  win.webContents.session.setPermissionCheckHandler(() => false)
+  win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => {
+    callback(false)
+  })
+
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url)
+    openExternalUrl(url)
     return { action: 'deny' }
   })
 
-  const devUrl = process.env.ELECTRON_RENDERER_URL
-  if (devUrl) {
-    win.loadURL(devUrl)
-    win.webContents.openDevTools({ mode: 'detach' })
-  } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'))
-  }
+  win.webContents.on('will-navigate', (event, url) => {
+    if (url === win.webContents.getURL()) return
+    event.preventDefault()
+    openExternalUrl(url)
+  })
+
+  win.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
+  if (!app.isPackaged) win.webContents.openDevTools({ mode: 'detach' })
 }
 
 function registerIpc(): void {
@@ -53,19 +84,21 @@ function registerIpc(): void {
   ipcMain.handle(IPC.resetPricing, async () => resetPricing())
   ipcMain.handle(
     IPC.getSessionEntries,
-    async (_e, filePath: string, sessionId: string, source: SourceId) =>
-      source === 'codex'
+    async (_e, filePath: string, sessionId: string, source: SourceId) => {
+      if (!isAllowedSessionFile(filePath, source)) {
+        throw new Error(`Refusing to read non-session file: ${filePath}`)
+      }
+
+      return source === 'codex'
         ? parseCodexSessionEntries(filePath, sessionId)
         : parseSessionEntries(filePath, sessionId)
+    }
   )
 }
 
-// In dev, macOS shows the default Electron dock icon because the .icns is only
-// applied by electron-builder when packaging. Set it explicitly so dev matches prod.
 function setDevDockIcon(): void {
-  if (process.platform !== 'darwin' || !app.dock) return
-  // __dirname is out/main during dev → repo root is two levels up.
-  const iconPath = join(__dirname, '../../resources/icon.png')
+  if (app.isPackaged || process.platform !== 'darwin' || !app.dock) return
+  const iconPath = join(app.getAppPath(), 'resources', 'icon.png')
   if (existsSync(iconPath)) app.dock.setIcon(iconPath)
 }
 
