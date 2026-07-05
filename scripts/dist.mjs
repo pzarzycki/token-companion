@@ -33,7 +33,7 @@ async function main() {
   const prepackaged = await findPrepackagedApp(forgePlatform, archArg)
   await fs.rm(join(root, 'out', 'dist'), { recursive: true, force: true })
   runBuilder(
-    [`--${platformArg}`, archFlag(archArg), '--config', 'electron-builder.yml', '--prepackaged', prepackaged],
+    ['--publish', 'never', `--${platformArg}`, archFlag(archArg), '--config', 'electron-builder.yml', '--prepackaged', prepackaged],
     {
       CSC_IDENTITY_AUTO_DISCOVERY: 'false',
       APPLE_ID: '',
