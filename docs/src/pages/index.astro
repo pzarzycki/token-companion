@@ -1,0 +1,216 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import {
+  actionsUrl,
+  featureCards,
+  platformCards,
+  releasesUrl,
+  repoUrl,
+  siteDescription,
+  sourceRows,
+  walkthrough,
+} from "../data/site";
+import { withBase } from "../lib/paths";
+
+const heroStats = [
+  { label: "Session sources", value: "Claude + Codex" },
+  { label: "Privacy posture", value: "100% local" },
+  { label: "Pricing model", value: "Editable per model" },
+];
+
+const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
+---
+
+<BaseLayout description={siteDescription}>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Local desktop analytics for AI coding sessions</p>
+        <h1>See exactly what your AI coding sessions cost.</h1>
+        <p class="hero-lead">
+          Token Companion reads the usage records already on disk, maps them to editable pricing,
+          and gives you a clear breakdown by model, session, and project folder.
+        </p>
+        <div class="button-row">
+          <a class="button button-primary" href={releasesUrl}>Download latest build</a>
+          <a class="button button-secondary" href={withBase("/install/")}>Installation guide</a>
+        </div>
+        <ul class="stat-grid">
+          {heroStats.map((item) => (
+            <li class="stat-card">
+              <strong>{item.value}</strong>
+              <span>{item.label}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="hero-media">
+        <div class="product-frame">
+          <img
+            src={withBase("/scr-sessions.jpg")}
+            alt="Token Companion sessions screen"
+            width="1162"
+            height="700"
+          />
+        </div>
+        <p class="floating-note">Reads usage, model, and cwd fields from the real session files already on disk.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="compat-strip">
+    <div class="container compat-row">
+      <p>Works with</p>
+      <ul class="pill-list">
+        {compatibility.map((item) => (
+          <li>{item}</li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section id="features" class="section">
+    <div class="container">
+      <div class="section-heading">
+        <p class="eyebrow">What makes it useful</p>
+        <h2>It answers product questions, not just parsing questions.</h2>
+        <p>
+          The interface stays small, but it is built around the exact questions you ask after a long agent-heavy day:
+          what cost changed, which model caused it, and which repo it came from.
+        </p>
+      </div>
+
+      <div class="feature-grid">
+        {featureCards.map((feature) => (
+          <article class="feature-card">
+            <h3>{feature.title}</h3>
+            <p>{feature.body}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section id="walkthrough" class="section section-alt">
+    <div class="container">
+      <div class="section-heading">
+        <p class="eyebrow">Walkthrough</p>
+        <h2>Four views that cover the whole loop.</h2>
+        <p>
+          The app stays deliberately narrow: one place to compare spend, inspect sessions, and correct pricing without
+          turning into a generic observability dashboard.
+        </p>
+      </div>
+
+      <div class="walkthrough-stack">
+        {walkthrough.map((item, index) => (
+          <article class:list={["walkthrough", index % 2 === 1 && "walkthrough-reverse"]}>
+            <div class="walkthrough-copy">
+              <p class="eyebrow">{item.eyebrow}</p>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+              <ul class="detail-list">
+                {item.points.map((point) => (
+                  <li>{point}</li>
+                ))}
+              </ul>
+            </div>
+            <div class="walkthrough-media">
+              <div class="product-frame">
+                <img src={withBase(item.image)} alt={item.alt} width="1162" height="700" />
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section id="sources" class="section">
+    <div class="container sources-layout">
+      <div>
+        <div class="section-heading section-heading-compact">
+          <p class="eyebrow">What it reads</p>
+          <h2>Focused on real local records.</h2>
+          <p>
+            Token Companion stays honest about what it can and cannot count. If a store exposes usage, it is counted.
+            If it does not, the app reports the gap instead of inventing numbers.
+          </p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>Location</th>
+                <th>Token data</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sourceRows.map((row) => (
+                <tr>
+                  <td>{row.source}</td>
+                  <td><code>{row.location}</code></td>
+                  <td>{row.tokenData}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <aside class="note-panel">
+        <p class="eyebrow">Parsing rules</p>
+        <h3>No hand-wavy totals.</h3>
+        <ul class="detail-list">
+          <li>Claude usage is counted per assistant message and deduplicated by message id.</li>
+          <li>Codex session totals are taken from the last cumulative snapshot in each session file.</li>
+          <li>Desktop binary stores are surfaced as untracked conversation counts when usage is unavailable.</li>
+        </ul>
+        <div class="button-row">
+          <a class="button button-ghost" href={repoUrl}>Read the source</a>
+          <a class="button button-ghost" href={actionsUrl}>Build status</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="install" class="section section-alt">
+    <div class="container">
+      <div class="section-heading">
+        <p class="eyebrow">Install</p>
+        <h2>Small install surface, explicit platform notes.</h2>
+        <p>
+          Releases are hosted on GitHub. The app is unsigned, so each platform has a small first-run step that is worth
+          documenting clearly instead of burying in a generic docs sidebar.
+        </p>
+      </div>
+
+      <div class="platform-grid">
+        {platformCards.map((platform) => (
+          <article class="platform-card">
+            <p class="platform-label">{platform.name}</p>
+            <h3>{platform.packageType}</h3>
+            <p>{platform.note}</p>
+            <a class="platform-link" href={withBase(`/install/#${platform.id}`)}>Open {platform.name} instructions</a>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container cta-band">
+      <div>
+        <p class="eyebrow">Local-first by design</p>
+        <h2>Download it, point it at your existing session history, and see the real spend.</h2>
+      </div>
+      <div class="button-row">
+        <a class="button button-primary" href={releasesUrl}>Get the latest release</a>
+        <a class="button button-secondary" href={withBase("/install/")}>Read install notes</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
