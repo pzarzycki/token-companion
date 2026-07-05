@@ -1,6 +1,6 @@
 export const siteName = "Token Companion";
 export const siteDescription =
-  "Local, privacy-first desktop app that reads exact token usage from Claude and Codex sessions and maps it to editable pricing.";
+  "Desktop app that reads local Claude and Codex usage records, applies editable pricing, and shows cost by model, session, and project.";
 
 export const repoUrl = "https://github.com/pzarzycki/token-companion";
 export const releasesUrl = `${repoUrl}/releases/latest`;
@@ -10,72 +10,72 @@ export const licenseUrl = `${repoUrl}/blob/main/LICENSE`;
 
 export const featureCards = [
   {
-    title: "Reads the real records",
-    body: "Counts the usage fields already written to disk instead of estimating spend from prompts and replies.",
+    title: "Reads files on disk",
+    body: "Uses the usage fields written by Claude and Codex instead of estimating cost from visible prompts and replies.",
   },
   {
-    title: "Pricing stays editable",
-    body: "Per-model input, output, cache-read, and cache-write pricing can be corrected in the app without rebuilding anything.",
+    title: "Keeps pricing editable",
+    body: "Input, output, cache-read, and cache-write prices can be adjusted per model from the app.",
   },
   {
-    title: "Sessions stay traceable",
-    body: "Every session keeps its source, model, and working directory so spend can be tied back to the project that caused it.",
+    title: "Keeps the source attached",
+    body: "Each session keeps its source, model list, and working directory so cost can be tied back to a repo or experiment.",
   },
   {
-    title: "Built for mixed agent workflows",
-    body: "Claude CLI, Claude Desktop agent modes, VS Code, and Codex CLI can be viewed together instead of in isolated logs.",
+    title: "Handles mixed tool use",
+    body: "Claude CLI, Claude Desktop agent modes, VS Code, and Codex CLI records can be viewed in one place.",
   },
   {
-    title: "Fast rescans, no restarts",
-    body: "Long coding day? Hit rescan and the app re-reads fresh session files without throwing away your current filters.",
+    title: "Separates token classes",
+    body: "Input, output, cache-read, cache-write, and reasoning tokens stay separate in the model and session views.",
   },
   {
-    title: "Local by default",
-    body: "Scanning, aggregation, and cost calculation all happen on your machine. No account, no telemetry, no cloud sync.",
+    title: "Does not upload sessions",
+    body: "Scanning, aggregation, and cost calculation run locally. There is no account, telemetry, or cloud sync.",
   },
 ] as const;
 
 export const walkthrough = [
   {
     eyebrow: "Models",
-    title: "See which model families are actually driving spend.",
-    body: "The model table keeps token classes separate and ranks spend so pricing mistakes or a runaway model stand out immediately.",
+    title: "Model totals",
+    body: "The model table ranks cost and keeps token classes separate so missing prices and expensive models are easy to spot.",
     points: [
-      "Input, output, cache-read, cache-write, and reasoning tokens stay distinct.",
-      "Missing pricing entries are visible instead of being hidden behind estimates.",
+      "Token classes stay distinct.",
+      "Missing or unverified prices remain visible.",
     ],
     image: "/scr-models.jpg",
     alt: "Token Companion models table",
   },
   {
     eyebrow: "Sessions",
-    title: "Trace the cost back to the session and the project folder.",
-    body: "Session view keeps the operational context intact, including the agent source, top model, total cost, and the cwd where the run happened.",
+    title: "Session attribution",
+    body: "The session list keeps the agent source, model, cost, and working directory together.",
     points: [
-      "Useful when multiple repos or experiments share the same local machine.",
-      "Filters stay global, so the list updates instantly when you narrow by date or source.",
+      "Useful when several repos share one machine.",
+      "Global filters narrow the list by date and source.",
     ],
     image: "/scr-sessions.jpg",
     alt: "Token Companion sessions view",
   },
   {
     eyebrow: "Drilldown",
-    title: "Open a single session and inspect how the conversation accumulated cost.",
-    body: "Conversation entries expose the per-turn token breakdown so you can see where tool calls, assistant replies, and reasoning blocks added up.",
+    title: "Per-session details",
+    body: "A session detail view shows how token usage accumulated across conversation entries.",
     points: [
       "Claude replay duplicates are deduplicated on message id.",
-      "Codex cumulative session totals are taken from the last event, not summed blindly.",
+      "Codex cumulative totals come from the last session event.",
     ],
     image: "/scr-drill-down.jpg",
     alt: "Token Companion session drilldown",
   },
   {
     eyebrow: "Pricing",
-    title: "Correct the rate card instead of living with stale defaults.",
-    body: "Pricing is editable in place, which matters when model names drift or a provider changes token pricing before your local defaults catch up.",
+    title: "Editable rate card",
+    body: "Pricing can be corrected in place when model names or provider prices change.",
     points: [
       "Per-model rate cards persist across restarts.",
-      "Good for verifying placeholder OpenAI or Codex pricing before trusting totals.",
+      "Unverified pricing can be marked before totals are trusted.",
     ],
     image: "/scr-pricing.jpg",
     alt: "Token Companion pricing editor",
@@ -109,19 +109,19 @@ export const platformCards = [
   {
     id: "macos",
     name: "macOS",
-    packageType: ".dmg",
-    note: "Unsigned first launch. Right-click Open once or clear quarantine from Terminal.",
+    packageType: "npx source build",
+    note: "Run the npx installer, which builds locally and copies Token Companion.app to ~/Applications by default.",
   },
   {
     id: "windows",
     name: "Windows",
-    packageType: "Setup.exe",
-    note: "Squirrel installer. SmartScreen will ask you to confirm the first run until the app is signed.",
+    packageType: "npx source build",
+    note: "Run the npx installer, which builds the Squirrel installer locally and runs the per-user setup.",
   },
   {
     id: "linux",
     name: "Linux",
-    packageType: ".deb / .rpm",
-    note: "Native distro packages when available, with source build instructions as a fallback.",
+    packageType: "npx source build",
+    note: "Run the npx installer, which builds native .deb and .rpm packages and installs the matching package.",
   },
 ] as const;

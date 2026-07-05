@@ -2,235 +2,290 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { buildWorkflowUrl, releasesUrl, repoUrl } from "../data/site";
 
-const platforms = [
+const npxInstall = `npx token-companion`;
+const posixInstall = `curl -fsSL https://raw.githubusercontent.com/pzarzycki/token-companion/main/install.sh | sh`;
+const windowsInstall = `irm https://raw.githubusercontent.com/pzarzycki/token-companion/main/install.ps1 | iex`;
+
+const sourceSteps = [
+  "Downloads the selected source tag or branch into a local build cache.",
+  "Runs npm ci, typecheck, parser verification, and the platform Electron Forge maker.",
+  "Installs the locally built app or package for the current operating system.",
+  "Prints original command output when something fails.",
+];
+
+const platformBuilds = [
   {
     id: "macos",
     name: "macOS",
-    packageType: ".dmg",
-    requirements: ["macOS 12 Monterey or later"],
-    steps: [
-      "Download the latest disk image from GitHub Releases.",
-      "Open the .dmg and drag Token Companion into Applications.",
-      "Eject the disk image after the copy finishes.",
+    target: "~/Applications/Token Companion.app by default",
+    requirements: ["Node.js 24 LTS and npm", "Xcode Command Line Tools"],
+    notes: [
+      "Builds on the Mac that will run the app.",
+      "Use --install-dir to choose a different application folder.",
+      "No Apple Developer certificate or notarization is used.",
     ],
-    noteTitle: "First launch on macOS",
-    noteBody:
-      "The app is not signed with an Apple Developer certificate, so Gatekeeper blocks the first open. Use Finder's Open action once, or clear the quarantine flag from Terminal.",
-    commandBlocks: [
-      {
-        title: "Terminal fallback",
-        lang: "bash",
-        lines: ["xattr -cr /Applications/Token\\ Companion.app"],
-      },
-    ],
-    verify:
-      "Launch the app from Applications. The Dashboard should appear and the header should show scanning activity within a second or two.",
   },
   {
     id: "windows",
     name: "Windows",
-    packageType: "Setup.exe",
-    requirements: ["Windows 10 64-bit or later"],
-    steps: [
-      "Download the latest Setup.exe from GitHub Releases.",
-      "Run the Squirrel installer.",
-      "If SmartScreen appears, click More info and then Run anyway.",
-      "Launch Token Companion from the Start Menu after setup completes.",
+    target: "Local Squirrel Setup.exe",
+    requirements: ["Node.js 24 LTS and npm", "Visual Studio Build Tools with Desktop development with C++"],
+    notes: [
+      "Builds the Squirrel installer locally and runs it.",
+      "The install is per-user and should not require administrator rights.",
+      "Downloaded unsigned release installers can still trigger SmartScreen.",
     ],
-    noteTitle: "First launch on Windows",
-    noteBody:
-      "Unsigned Windows installers trigger SmartScreen until they build reputation. That warning is expected for a small open-source desktop tool distributed directly through GitHub Releases.",
-    commandBlocks: [],
-    verify:
-      "On first launch the app should begin scanning %USERPROFILE%\\.claude\\projects and %USERPROFILE%\\.codex\\sessions automatically.",
   },
   {
     id: "linux",
     name: "Linux",
-    packageType: ".deb / .rpm",
-    requirements: [
-      "x86-64 Linux",
-      "A Debian-based distro for .deb packages or an RPM-based distro for .rpm packages",
+    target: ".deb or .rpm package",
+    requirements: ["Node.js 24 LTS and npm", "build-essential", "Python 3", "fakeroot", "dpkg", "rpm"],
+    notes: [
+      "Builds native Debian/Ubuntu and Fedora/RHEL style packages.",
+      "Installs with apt, dnf, or rpm when possible.",
+      "Use --package-only if you only want the package file under out/make.",
     ],
-    steps: [
-      "Download the package that matches your distro from GitHub Releases.",
-      "Install it with your package manager.",
-      "Launch Token Companion from the application launcher after installation.",
-    ],
-    noteTitle: "Package notes on Linux",
-    noteBody:
-      "Packages may be unsigned depending on how they were built and distributed. If a release for your distro is not published yet, build from source on the target machine.",
-    commandBlocks: [
-      {
-        title: "Debian or Ubuntu",
-        lang: "bash",
-        lines: ["sudo apt install ./token-companion_<version>_amd64.deb"],
-      },
-      {
-        title: "Fedora or RHEL",
-        lang: "bash",
-        lines: ["sudo dnf install ./token-companion-<version>.x86_64.rpm"],
-      },
-    ],
-    verify:
-      "After launch, the Dashboard should appear and scanning should begin without any extra configuration for standard Claude and Codex installs.",
   },
 ];
 
-const buildCards = [
+const releaseArtifacts = [
   {
-    title: "Shared prerequisites",
-    items: [
-      "Node.js 24 LTS",
-      "npm",
-      "A native build toolchain for classic-level on the host platform",
-    ],
+    platform: "macOS",
+    artifact: ".dmg",
+    warning: "Unsigned disk image. Gatekeeper first-launch warning is expected.",
   },
   {
-    title: "Platform-specific toolchains",
-    items: [
-      "macOS: Xcode Command Line Tools",
-      "Windows: Visual Studio Build Tools with Desktop development with C++",
-      "Linux: build-essential, Python 3, fakeroot, and rpm",
-    ],
+    platform: "Windows",
+    artifact: "Setup.exe",
+    warning: "Unsigned Squirrel installer. SmartScreen warning is expected.",
   },
   {
-    title: "Why builds are local to the host OS",
-    items: [
-      "classic-level is a native module",
-      "Electron packaging is platform-specific",
-      "The release job builds each platform on its matching runner",
-    ],
+    platform: "Linux",
+    artifact: ".deb / .rpm",
+    warning: "Native packages for common Debian/RPM distributions when a release is published.",
   },
 ];
 ---
 
-<BaseLayout title="Install" description="Install Token Companion on macOS, Windows, and Linux.">
+<BaseLayout title="Install" description="Build and install Token Companion locally from source on macOS, Windows, and Linux.">
   <section class="hero install-hero">
     <div class="container install-hero-grid">
       <div class="hero-copy install-copy">
         <p class="eyebrow">Install Token Companion</p>
-        <h1>Download it, clear the first-run warning once, and start scanning.</h1>
+        <h1>Install with npx, then let it build locally.</h1>
         <p class="hero-lead">
-          Token Companion is distributed through GitHub Releases as an unsigned desktop app. The install path is short
-          on every platform, but the first-run warning should be explicit and easy to follow.
+          Token Companion is open source and does not use paid developer signatures. The primary install path uses
+          <code>npx</code> to build from source on your computer; unsigned GitHub release binaries remain available as a convenience.
         </p>
         <div class="button-row">
-          <a class="button button-primary" href={releasesUrl}>Open releases</a>
-          <a class="button button-secondary" href={buildWorkflowUrl}>Build workflow</a>
+          <a class="button button-primary" href="#source-build">Install with npx</a>
+          <a class="button button-secondary" href={releasesUrl}>Unsigned releases</a>
         </div>
         <div class="jump-links">
-          {platforms.map((platform) => (
+          {platformBuilds.map((platform) => (
             <a href={`#${platform.id}`}>{platform.name}</a>
           ))}
+          <a href="#release-binaries">Binaries</a>
         </div>
       </div>
 
       <aside class="note-panel install-summary">
-        <p class="eyebrow">Release formats</p>
-        <h3>One download path per desktop OS.</h3>
+        <p class="eyebrow">Default path</p>
+        <h3>One command, local build.</h3>
         <ul class="detail-list">
-          <li>macOS ships as a <code>.dmg</code> with a one-time Gatekeeper step.</li>
-          <li>Windows ships as <code>Setup.exe</code> through Squirrel with the usual SmartScreen prompt.</li>
-          <li>Linux uses native <code>.deb</code> and <code>.rpm</code> packages when a release is published.</li>
+          <li>Use <code>npx</code> on macOS, Windows, or Linux.</li>
+          <li><code>npm</code> and <code>npx</code> come with the standard Node.js install.</li>
+          <li>Install Node.js from <code>nodejs.org/en/download</code> if <code>npx</code> is missing.</li>
+          <li>Pin a tag with <code>--version</code>.</li>
+          <li>Use dry-run mode to inspect the planned commands first.</li>
         </ul>
       </aside>
     </div>
   </section>
 
-  {platforms.map((platform, index) => (
-    <section id={platform.id} class:list={["section", index % 2 === 1 && "section-alt"]}>
+  <section id="source-build" class="section section-alt">
+    <div class="container sources-layout">
+      <div>
+        <div class="section-heading section-heading-compact">
+          <p class="eyebrow">Source build</p>
+          <h2>Recommended install command.</h2>
+          <p>
+            The `npx` installer fetches the public source, builds the Electron app on the current machine, and installs
+            the artifact produced by that build.
+          </p>
+        </div>
+
+        <div class="command-stack">
+          <div>
+            <p class="command-label">macOS, Windows, or Linux</p>
+            <pre class="code-block"><code>{npxInstall}</code></pre>
+          </div>
+          <div>
+            <p class="command-label">If npx is missing</p>
+            <pre class="code-block"><code>{`Install Node.js from https://nodejs.org/en/download`}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <aside class="note-panel">
+        <p class="eyebrow">What it does</p>
+        <h3>No hidden packaging service.</h3>
+        <ol class="step-list">
+          {sourceSteps.map((step) => (
+            <li>{step}</li>
+          ))}
+        </ol>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-heading">
+        <p class="eyebrow">Inspect and pin</p>
+        <h2>Review the installer or build a specific tag.</h2>
+      </div>
+
+      <div class="command-stack build-commands">
+        <div>
+          <p class="command-label">Default install</p>
+          <pre class="code-block"><code>{npxInstall}</code></pre>
+        </div>
+        <div>
+          <p class="command-label">Dry run</p>
+          <pre class="code-block"><code>{`npx token-companion --dry-run`}</code></pre>
+        </div>
+        <div>
+          <p class="command-label">Build a tag</p>
+          <pre class="code-block"><code>{`npx token-companion --version v0.1.2`}</code></pre>
+        </div>
+        <div>
+          <p class="command-label">Fallback scripts</p>
+          <pre class="code-block"><code>{`${posixInstall}
+${windowsInstall}`}</code></pre>
+        </div>
+      </div>
+
+      <ul class="detail-list install-option-list">
+        <li><code>--dry-run</code> prints checks, commands, and targets without building.</li>
+        <li><code>--package-only</code> builds packages without installing them.</li>
+        <li><code>--install-dir &lt;path&gt;</code> changes the macOS app destination.</li>
+      </ul>
+    </div>
+  </section>
+
+  {platformBuilds.map((platform, index) => (
+    <section id={platform.id} class:list={["section", index % 2 === 0 && "section-alt"]}>
       <div class="container install-layout">
         <div class="install-main">
           <p class="eyebrow">{platform.name}</p>
-          <h2>{platform.packageType}</h2>
+          <h2>{platform.target}</h2>
+          <h3>Prerequisites</h3>
           <ul class="detail-list">
             {platform.requirements.map((requirement) => (
               <li>{requirement}</li>
             ))}
           </ul>
-
-          <h3>Install</h3>
-          <ol class="step-list">
-            {platform.steps.map((step) => (
-              <li>{step}</li>
-            ))}
-          </ol>
-
-          {platform.commandBlocks.length > 0 && (
-            <div class="command-stack">
-              {platform.commandBlocks.map((block) => (
-                <div>
-                  <p class="command-label">{block.title}</p>
-                  <pre class="code-block"><code>{block.lines.join("\n")}</code></pre>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         <aside class="note-panel install-aside">
-          <p class="eyebrow">{platform.noteTitle}</p>
+          <p class="eyebrow">Platform notes</p>
           <h3>{platform.name}</h3>
-          <p>{platform.noteBody}</p>
-          <p class="install-verify"><strong>After launch:</strong> {platform.verify}</p>
+          <ul class="detail-list">
+            {platform.notes.map((note) => (
+              <li>{note}</li>
+            ))}
+          </ul>
         </aside>
       </div>
     </section>
   ))}
 
-  <section id="first-launch" class="section">
+  <section id="first-launch" class="section section-alt">
     <div class="container sources-layout">
       <div>
         <div class="section-heading section-heading-compact">
           <p class="eyebrow">First launch</p>
-          <h2>What you should see immediately.</h2>
+          <h2>The app should start scanning immediately.</h2>
           <p>
-            The Dashboard is the first screen. Scanning begins automatically and stays read-only. Standard installs are
-            detected without extra configuration.
+            The Dashboard is the first screen. Scanning is read-only and standard Claude and Codex locations are detected
+            without extra configuration.
           </p>
         </div>
         <ul class="detail-list">
-          <li>The header should show scanning activity almost immediately.</li>
           <li>Claude sessions are read from <code>~/.claude/projects</code>.</li>
           <li>Codex sessions are read from <code>~/.codex/sessions</code>.</li>
-          <li>If desktop chat stores are present but uncountable, they appear as untracked conversations instead of fake token totals.</li>
+          <li>Desktop stores without token usage are shown as untracked conversations instead of estimated costs.</li>
         </ul>
       </div>
 
       <aside class="note-panel">
-        <p class="eyebrow">If a release is missing</p>
-        <h3>Build from source on the target OS.</h3>
+        <p class="eyebrow">No account</p>
+        <h3>Everything stays local.</h3>
         <p>
-          The app bundles a native dependency, so packaging should happen on the same operating system that will consume
-          the build. The repository already includes per-platform build scripts and a matching GitHub Actions matrix.
+          Token Companion reads files already on your machine. It does not require an account, telemetry setup, or a
+          hosted service.
+        </p>
+      </aside>
+    </div>
+  </section>
+
+  <section id="release-binaries" class="section">
+    <div class="container sources-layout">
+      <div>
+        <div class="section-heading section-heading-compact">
+          <p class="eyebrow">Optional binaries</p>
+          <h2>Unsigned release artifacts stay available.</h2>
+          <p>
+            Releases are tagged from <code>main</code> and built on matching GitHub Actions runners. They are convenient,
+            but they are not signed with Apple or Microsoft developer certificates. Tagged releases include
+            <code>SHA256SUMS</code> for the uploaded artifacts.
+          </p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Platform</th>
+                <th>Artifact</th>
+                <th>Warning</th>
+              </tr>
+            </thead>
+            <tbody>
+              {releaseArtifacts.map((artifact) => (
+                <tr>
+                  <td>{artifact.platform}</td>
+                  <td><code>{artifact.artifact}</code></td>
+                  <td>{artifact.warning}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <aside class="note-panel">
+        <p class="eyebrow">Release path</p>
+        <h3>Use binaries when convenience matters more than local provenance.</h3>
+        <p>
+          The source installer is the preferred trust path. Release binaries are still useful for quick installs,
+          testing, or users who do not want a local build toolchain.
         </p>
         <div class="button-row">
-          <a class="button button-ghost" href={repoUrl}>Clone repository</a>
-          <a class="button button-ghost" href={buildWorkflowUrl}>Inspect CI build</a>
+          <a class="button button-ghost" href={releasesUrl}>Open releases</a>
+          <a class="button button-ghost" href={buildWorkflowUrl}>Build workflow</a>
         </div>
       </aside>
     </div>
   </section>
 
-  <section class="section section-alt">
+  <section id="manual-build" class="section section-alt">
     <div class="container">
       <div class="section-heading">
-        <p class="eyebrow">Build from source</p>
-        <h2>Use the host platform, install dependencies once, then run the matching build target.</h2>
-      </div>
-
-      <div class="feature-grid build-grid">
-        {buildCards.map((card) => (
-          <article class="feature-card">
-            <h3>{card.title}</h3>
-            <ul class="detail-list">
-              {card.items.map((item) => (
-                <li>{item}</li>
-              ))}
-            </ul>
-          </article>
-        ))}
+        <p class="eyebrow">Manual build</p>
+        <h2>Use the same commands yourself.</h2>
       </div>
 
       <div class="command-stack build-commands">
@@ -238,11 +293,12 @@ const buildCards = [
           <p class="command-label">Clone and install</p>
           <pre class="code-block"><code>{`git clone ${repoUrl}.git
 cd token-companion
-npm install`}</code></pre>
+npm ci`}</code></pre>
         </div>
         <div>
-          <p class="command-label">Build on the current OS</p>
-          <pre class="code-block"><code>{`npm run package
+          <p class="command-label">Verify and build</p>
+          <pre class="code-block"><code>{`npm run typecheck
+npm run verify
 npm run make`}</code></pre>
         </div>
       </div>

@@ -1,0 +1,28 @@
+{
+  "name": "token-companion",
+  "version": "0.1.2",
+  "description": "Source-build installer for the Token Companion desktop app",
+  "bin": {
+    "token-companion": "bin/token-companion.mjs"
+  },
+  "files": [
+    "README.md",
+    "bin/token-companion.mjs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pzarzycki/token-companion.git"
+  },
+  "homepage": "https://github.com/pzarzycki/token-companion#readme",
+  "bugs": {
+    "url": "https://github.com/pzarzycki/token-companion/issues"
+  },
+  "license": "MIT",
+  "author": "Pawel Zarzycki",
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "tar": "7.5.19"
+  }
+}

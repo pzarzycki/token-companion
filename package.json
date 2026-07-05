@@ -1,7 +1,8 @@
 {
-  "name": "token-companion",
+  "name": "token-companion-desktop",
   "productName": "Token Companion",
-  "version": "0.1.0",
+  "version": "0.1.2",
+  "private": true,
   "description": "Local analyzer for token spend across Claude and Codex sessions",
   "main": ".webpack/main",
   "author": "Pawel Zarzycki",
@@ -21,7 +22,9 @@
     "audit": "npm audit",
     "audit:prod": "npm audit --omit=dev",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "install:dry-run": "node scripts/install.mjs --dry-run",
+    "install:help": "node scripts/install.mjs --help"
   },
   "dependencies": {
     "classic-level": "3.0.0",

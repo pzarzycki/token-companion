@@ -13,9 +13,9 @@ import {
 import { withBase } from "../lib/paths";
 
 const heroStats = [
-  { label: "Session sources", value: "Claude + Codex" },
-  { label: "Privacy posture", value: "100% local" },
-  { label: "Pricing model", value: "Editable per model" },
+  { label: "Sources", value: "Claude + Codex" },
+  { label: "Scan mode", value: "Local files" },
+  { label: "Rates", value: "Editable" },
 ];
 
 const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
@@ -25,15 +25,15 @@ const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
   <section class="hero">
     <div class="container hero-grid">
       <div class="hero-copy">
-        <p class="eyebrow">Local desktop analytics for AI coding sessions</p>
-        <h1>See exactly what your AI coding sessions cost.</h1>
+        <p class="eyebrow">Desktop app for local usage records</p>
+        <h1>Track token cost from Claude and Codex session files.</h1>
         <p class="hero-lead">
-          Token Companion reads the usage records already on disk, maps them to editable pricing,
-          and gives you a clear breakdown by model, session, and project folder.
+          Token Companion reads the usage records already on your machine, applies an editable price table, and shows
+          cost by model, session, and project folder.
         </p>
         <div class="button-row">
-          <a class="button button-primary" href={releasesUrl}>Download latest build</a>
-          <a class="button button-secondary" href={withBase("/install/")}>Installation guide</a>
+          <a class="button button-primary" href={withBase("/install/")}>Install with npx</a>
+          <a class="button button-secondary" href={releasesUrl}>Unsigned releases</a>
         </div>
         <ul class="stat-grid">
           {heroStats.map((item) => (
@@ -54,7 +54,6 @@ const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
             height="700"
           />
         </div>
-        <p class="floating-note">Reads usage, model, and cwd fields from the real session files already on disk.</p>
       </div>
     </div>
   </section>
@@ -73,11 +72,11 @@ const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
   <section id="features" class="section">
     <div class="container">
       <div class="section-heading">
-        <p class="eyebrow">What makes it useful</p>
-        <h2>It answers product questions, not just parsing questions.</h2>
+        <p class="eyebrow">What it does</p>
+        <h2>It keeps the accounting path visible.</h2>
         <p>
-          The interface stays small, but it is built around the exact questions you ask after a long agent-heavy day:
-          what cost changed, which model caused it, and which repo it came from.
+          The app is intentionally narrow: read local records, apply known prices, and keep enough context to check where
+          the numbers came from.
         </p>
       </div>
 
@@ -95,17 +94,17 @@ const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
   <section id="walkthrough" class="section section-alt">
     <div class="container">
       <div class="section-heading">
-        <p class="eyebrow">Walkthrough</p>
-        <h2>Four views that cover the whole loop.</h2>
+        <p class="eyebrow">Views</p>
+        <h2>The main views.</h2>
         <p>
-          The app stays deliberately narrow: one place to compare spend, inspect sessions, and correct pricing without
-          turning into a generic observability dashboard.
+          The landing page should show the product, not oversell it. These screens cover the normal path from model
+          totals to individual sessions and pricing corrections.
         </p>
       </div>
 
       <div class="walkthrough-stack">
-        {walkthrough.map((item, index) => (
-          <article class:list={["walkthrough", index % 2 === 1 && "walkthrough-reverse"]}>
+        {walkthrough.map((item) => (
+          <article class="walkthrough">
             <div class="walkthrough-copy">
               <p class="eyebrow">{item.eyebrow}</p>
               <h3>{item.title}</h3>
@@ -132,10 +131,10 @@ const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
       <div>
         <div class="section-heading section-heading-compact">
           <p class="eyebrow">What it reads</p>
-          <h2>Focused on real local records.</h2>
+          <h2>Focused on local records.</h2>
           <p>
-            Token Companion stays honest about what it can and cannot count. If a store exposes usage, it is counted.
-            If it does not, the app reports the gap instead of inventing numbers.
+            If a store exposes token usage, Token Companion counts it. If it does not, the app reports the gap instead
+            of inventing a cost.
           </p>
         </div>
 
@@ -163,7 +162,7 @@ const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
 
       <aside class="note-panel">
         <p class="eyebrow">Parsing rules</p>
-        <h3>No hand-wavy totals.</h3>
+        <h3>Counting rules are explicit.</h3>
         <ul class="detail-list">
           <li>Claude usage is counted per assistant message and deduplicated by message id.</li>
           <li>Codex session totals are taken from the last cumulative snapshot in each session file.</li>
@@ -181,10 +180,10 @@ const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
     <div class="container">
       <div class="section-heading">
         <p class="eyebrow">Install</p>
-        <h2>Small install surface, explicit platform notes.</h2>
+        <h2>Install with npx or use unsigned releases.</h2>
         <p>
-          Releases are hosted on GitHub. The app is unsigned, so each platform has a small first-run step that is worth
-          documenting clearly instead of burying in a generic docs sidebar.
+          The install notes keep the `npx` source-build path first and leave platform-specific signing and packaging
+          details visible instead of hiding them behind a generic download button.
         </p>
       </div>
 
@@ -204,12 +203,12 @@ const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
   <section class="section">
     <div class="container cta-band">
       <div>
-        <p class="eyebrow">Local-first by design</p>
-        <h2>Download it, point it at your existing session history, and see the real spend.</h2>
+        <p class="eyebrow">Local records, local calculation</p>
+        <h2>Install Token Companion and scan your existing session history.</h2>
       </div>
       <div class="button-row">
-        <a class="button button-primary" href={releasesUrl}>Get the latest release</a>
-        <a class="button button-secondary" href={withBase("/install/")}>Read install notes</a>
+        <a class="button button-primary" href={withBase("/install/")}>Install with npx</a>
+        <a class="button button-secondary" href={releasesUrl}>Unsigned releases</a>
       </div>
     </div>
   </section>

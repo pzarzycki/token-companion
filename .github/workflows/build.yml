@@ -1,12 +1,11 @@
-name: Build
+name: Release
 
-# Manual trigger only for now (no remote / release automation yet).
-# Also runs on version tags (v*) so pushing a tag produces a draft release.
+# Version tags on main are the release source of truth.
 on:
   workflow_dispatch:
     inputs:
       release:
-        description: "Collect artifacts into a draft GitHub release"
+        description: "Build artifacts, publish GitHub release, and publish npm package"
         type: boolean
         default: false
   push:
@@ -52,6 +51,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: node scripts/verify-release-version.mjs "${{ github.ref }}"
+
+      - name: Validate source installer
+        run: npm run install:dry-run
+
+      - name: Validate POSIX installer syntax
+        if: runner.os != 'Windows'
+        run: sh -n install.sh
+
+      - name: Validate PowerShell installer help
+        if: runner.os == 'Windows'
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Help
+
       - name: Build
         run: npm run ${{ matrix.script }}
         env:
@@ -67,21 +81,73 @@ jobs:
           retention-days: 14
 
   release:
-    name: Draft release
+    name: Publish GitHub release
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v') || inputs.release
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: node scripts/verify-release-version.mjs "${{ github.ref }}"
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: dist
 
+      - name: Generate checksums
+        run: find dist -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > dist/SHA256SUMS
+
       - name: Draft GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          draft: false
           files: dist/**/*
           generate_release_notes: true
+
+  publish-npm:
+    name: Publish npm package
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node for npm publish
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tag matches package version
+        run: node scripts/verify-release-version.mjs "${{ github.ref }}" "packages/npm-installer/package.json"
+
+      - name: Install npm package dependencies
+        run: npm ci
+        working-directory: packages/npm-installer
+
+      - name: Publish package
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "token-companion@$VERSION" version >/dev/null 2>&1; then
+            echo "token-companion@$VERSION already published; skipping npm publish"
+            exit 0
+          fi
+          npm publish
+        working-directory: packages/npm-installer
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

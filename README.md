@@ -13,7 +13,7 @@ Local, privacy-first desktop analytics for Claude and Codex usage records alread
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-online-8b5cf6?style=flat-square&logo=readthedocs&logoColor=white)](https://pzarzycki.github.io/token-companion/)
 
-[Download](#download) · [Documentation](https://pzarzycki.github.io/token-companion/) · [What it reads](#what-it-reads) · [Building](#building-from-source)
+[Install](#install) · [Documentation](https://pzarzycki.github.io/token-companion/) · [What it reads](#what-it-reads) · [Building](#building-from-source)
 
 <img src="docs/assets/scr-sessions.jpg" alt="Token Companion sessions view" width="820" />
 
@@ -27,15 +27,71 @@ Local, privacy-first desktop analytics for Claude and Codex usage records alread
 - One view across Claude CLI, Claude Desktop agent modes, VS Code, and Codex CLI.
 - Session, model, and project-folder attribution.
 
-## Download
+## Install
 
-Grab the latest build from [GitHub Releases](https://github.com/pzarzycki/token-companion/releases/latest).
+The recommended path is to build and install Token Companion locally from source with `npx`. This avoids paid developer signatures and makes the source used for the installed app visible on your machine.
+
+Recommended one-liner:
+
+```bash
+npx token-companion
+```
+
+Prerequisite: Node.js 24 LTS or newer. `npm` and `npx` are included with the standard Node.js install.
+Install Node.js from https://nodejs.org/en/download if `npx` is missing.
+
+Fallback script installers:
+
+macOS and Linux:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pzarzycki/token-companion/main/install.sh | sh
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/pzarzycki/token-companion/main/install.ps1 | iex
+```
+
+Inspect before running:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pzarzycki/token-companion/main/install.sh | less
+```
+
+```powershell
+irm https://raw.githubusercontent.com/pzarzycki/token-companion/main/install.ps1 | more
+```
+
+Build a specific tag:
+
+```bash
+npx token-companion --version v0.1.2
+```
+
+```powershell
+npx token-companion --dry-run
+```
+
+Useful options:
+
+- `--dry-run`: print checks, build commands, and install target.
+- `--package-only`: build packages but do not install or run the installer.
+- `--install-dir <path>`: macOS app destination.
+
+### Optional release binaries
+
+GitHub Releases still provide unsigned binaries for convenience. They are useful when you want a quick download, but macOS Gatekeeper and Windows SmartScreen warnings are expected because the project does not use paid developer certificates.
 
 | Platform | Artifact | Notes |
 |---|---|---|
 | macOS | `.dmg` | Unsigned disk image. |
 | Windows | `Setup.exe` | Built with Squirrel.Windows; SmartScreen warning expected until signed. |
 | Linux | `.deb` / `.rpm` | Native distro packages for Debian/Ubuntu and Fedora/RHEL style systems. |
+
+Release downloads: [GitHub Releases](https://github.com/pzarzycki/token-companion/releases/latest).
+Tagged releases include `SHA256SUMS` for the uploaded artifacts.
 
 Install details: [docs](https://pzarzycki.github.io/token-companion/install/).
 
@@ -59,10 +115,12 @@ Token Companion uses [Electron Forge](https://www.electronforge.io/) with the st
 
 ### Prerequisites
 
-- Node.js 24 LTS and npm
+- Node.js 24 LTS or newer with npm and npx
 - macOS: Xcode Command Line Tools
 - Windows: Visual Studio Build Tools with Desktop development with C++
 - Linux: `build-essential`, Python 3, `fakeroot`, and `rpm`
+
+The source installer checks these prerequisites before building. It fails with the original command output if dependency install, verification, or packaging fails.
 
 ### Install
 
