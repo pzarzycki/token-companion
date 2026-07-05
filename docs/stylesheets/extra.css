@@ -1,0 +1,263 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── Brand tokens ────────────────────────────────────────────── */
+:root {
+  --tc-violet: #7c3aed;
+  --tc-violet-light: #ede9fe;
+  --tc-violet-dark: #5b21b6;
+  --tc-lime: #84cc16;
+  --tc-radius: 12px;
+}
+
+/* ── Hero ────────────────────────────────────────────────────── */
+.tc-hero {
+  padding: 48px 24px 40px;
+  text-align: center;
+  background: linear-gradient(160deg, #f5f3ff 0%, #ffffff 55%, #f0fdf4 100%);
+  border-radius: var(--tc-radius);
+  margin: -0.8rem -0.8rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.tc-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(124, 58, 237, .08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(132, 204, 22, .06) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.tc-hero-eyebrow {
+  display: inline-block;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tc-violet);
+  background: var(--tc-violet-light);
+  padding: 3px 12px;
+  border-radius: 999px;
+  margin-bottom: 18px;
+}
+
+.tc-hero h1 {
+  font-size: clamp(1.6rem, 3.2vw, 2.2rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #1a0a3d;
+  margin: 0 0 14px;
+  max-width: 620px;
+  margin-inline: auto;
+}
+
+.tc-hero h1 em {
+  font-style: normal;
+  color: var(--tc-violet);
+}
+
+.tc-tagline {
+  font-size: 0.95rem;
+  color: #4b5563;
+  max-width: 500px;
+  margin: 0 auto 28px;
+  line-height: 1.6;
+}
+
+/* ── CTA buttons ─────────────────────────────────────────────── */
+.tc-hero-buttons {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.tc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 24px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.tc-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .12);
+}
+
+.tc-btn-primary {
+  background: var(--tc-violet);
+  color: #fff !important;
+}
+
+.tc-btn-secondary {
+  background: #fff;
+  color: var(--tc-violet) !important;
+  border: 2px solid var(--tc-violet);
+}
+
+/* ── Badge row ───────────────────────────────────────────────── */
+.tc-hero-badges {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.tc-hero-badges a {
+  display: inline-flex;
+}
+
+/* ── Agent compatibility line ────────────────────────────────── */
+.tc-hero-agents {
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.tc-hero-agents strong {
+  color: #4b5563;
+  font-weight: 600;
+}
+
+/* ── Product screenshot ──────────────────────────────────────── */
+.tc-shot {
+  max-width: 920px;
+  margin: 2.4rem auto 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e4d9ff;
+  box-shadow: 0 12px 40px rgba(124, 58, 237, .12), 0 2px 8px rgba(0, 0, 0, .06);
+}
+
+.tc-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+[data-md-color-scheme="slate"] .tc-shot {
+  border-color: #2a1f45;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .4);
+}
+
+/* ── Feature cards ───────────────────────────────────────────── */
+.tc-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: #e4d9ff;
+  border: 1px solid #e4d9ff;
+  border-radius: var(--tc-radius);
+  overflow: hidden;
+  margin: 2.4rem 0;
+}
+
+.tc-feature-card {
+  background: #faf9ff;
+  padding: 28px 24px;
+}
+
+.tc-feature-card h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1a0a3d;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.tc-feature-card p {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── Dark mode ───────────────────────────────────────────────── */
+[data-md-color-scheme="slate"] .tc-hero {
+  background: linear-gradient(160deg, #1e1332 0%, #0f0f1a 55%, #0d1a0a 100%);
+}
+
+[data-md-color-scheme="slate"] .tc-hero::before {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(124, 58, 237, .18) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(132, 204, 22, .08) 0%, transparent 50%);
+}
+
+[data-md-color-scheme="slate"] .tc-hero h1 {
+  color: #f0ecff;
+}
+
+[data-md-color-scheme="slate"] .tc-hero h1 em {
+  color: #a78bfa;
+}
+
+[data-md-color-scheme="slate"] .tc-tagline {
+  color: #9ca3af;
+}
+
+[data-md-color-scheme="slate"] .tc-hero-eyebrow {
+  background: rgba(124, 58, 237, .2);
+  color: #c4b5fd;
+}
+
+[data-md-color-scheme="slate"] .tc-hero-agents {
+  color: #6b7280;
+}
+
+[data-md-color-scheme="slate"] .tc-hero-agents strong {
+  color: #9ca3af;
+}
+
+[data-md-color-scheme="slate"] .tc-features {
+  background: #2a1f45;
+  border-color: #2a1f45;
+}
+
+[data-md-color-scheme="slate"] .tc-feature-card {
+  background: #130d22;
+}
+
+[data-md-color-scheme="slate"] .tc-feature-card h3 {
+  color: #f0ecff;
+}
+
+[data-md-color-scheme="slate"] .tc-feature-card p {
+  color: #6b7280;
+}
+
+[data-md-color-scheme="slate"] .tc-btn-secondary {
+  background: transparent;
+  color: #a78bfa !important;
+  border-color: #7c3aed;
+}
+
+/* ── Global tweaks ───────────────────────────────────────────── */
+.md-typeset { font-size: 0.9rem; }
+
+/* Lime accent on tip admonitions */
+.md-typeset .admonition.tip,
+.md-typeset details.tip {
+  border-color: var(--tc-lime);
+}
+
+.md-typeset .tip > .admonition-title,
+.md-typeset .tip > summary {
+  background-color: rgba(132, 204, 22, .1);
+}
+
+.md-typeset .tip > .admonition-title::before,
+.md-typeset .tip > summary::before {
+  background-color: var(--tc-lime);
+}

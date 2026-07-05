@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+
+# Build output
+out/
+dist/
+release/
+build/
+site/
+*.tsbuildinfo
+
+# Electron/electron-builder generated files
+*.dmg
+*.zip
+*.AppImage
+*.blockmap
+builder-debug.yml
+builder-effective-config.yaml
+
+# Test and coverage output
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# Logs and diagnostics
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime caches
+.cache/
+.vite/
+.npm/
+.eslintcache
+
+# Environment and local config
+.env
+.env.*
+!.env.example
+!.env.sample
+.claude/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.swp
+*.swo
