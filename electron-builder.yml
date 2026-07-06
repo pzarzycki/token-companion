@@ -1,4 +1,4 @@
-appId: com.pawelzarzycki.tokencompanion
+appId: com.pzarzycki.tokencompanion
 productName: Token Companion
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 directories:

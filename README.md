@@ -46,7 +46,7 @@ Current release: `v0.1.5`
 
 Warning:
 
-- macOS builds are unsigned and not notarized. Gatekeeper may block first launch. If it does, open the app from Finder with control-click -> `Open`, or allow it in System Settings.
+- macOS builds are ad-hoc signed for bundle integrity but are not notarized. Gatekeeper may still block first launch because the app is not notarized. If it does, open the app from Finder with control-click -> `Open`, or allow it in System Settings.
 - Windows builds are unsigned unless the GitHub Actions runner is given `WINDOWS_SIGNING_CERT_BASE64` and `WINDOWS_SIGNING_CERT_PASSWORD` secrets. A self-signed certificate will sign the binary, but SmartScreen will still show `More info` -> `Run anyway` unless the certificate chains to a trusted publisher.
 - Linux packages are convenience artifacts, not signed distro packages. Verify `SHA256SUMS` before installing.
 
@@ -134,6 +134,8 @@ npm run dist:mac
 npm run dist:win
 npm run dist:linux
 ```
+
+On macOS, `npm run dist:mac` repairs the Forge-produced `.app`, removes stale signatures, ad-hoc re-signs it, verifies the bundle with `codesign`, and only then hands it to `electron-builder` for the final DMG/ZIP artifacts.
 
 Backward-compatible aliases remain available: `npm run make`, `npm run make:mac`, `npm run make:win`, and `npm run make:linux`.
 

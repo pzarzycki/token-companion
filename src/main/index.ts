@@ -19,7 +19,7 @@ app.disableHardwareAcceleration()
 
 app.setName('Token Companion')
 if (process.platform === 'win32') {
-  app.setAppUserModelId('com.pawelzarzycki.tokencompanion')
+  app.setAppUserModelId('com.pzarzycki.tokencompanion')
 }
 
 const REPO_URL = 'https://github.com/pzarzycki/token-companion'

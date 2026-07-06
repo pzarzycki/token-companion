@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const platform = process.platform
 const arch = process.arch
+const macBuildMetaPath = join(root, 'out', 'mac-build.json')
 
 const options = parseArgs(process.argv.slice(2))
 let npmCliPath
@@ -195,14 +196,22 @@ async function findFiles(start, predicate) {
 }
 
 async function findMacApp() {
-  const apps = await findFiles(join(root, 'out'), (file) => basename(file) === 'Token Companion.app')
-  if (!apps.length) {
-    const packagedDirs = await findFiles(join(root, 'out'), (file) => basename(file) === 'Info.plist')
-    const appInfo = packagedDirs.find((file) => file.includes('Token Companion.app'))
-    if (appInfo) return dirname(dirname(appInfo))
-    throw new Error('Could not find built Token Companion.app under out/')
+  let payload
+  try {
+    payload = JSON.parse(await fs.readFile(macBuildMetaPath, 'utf8'))
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    throw new Error(`Could not read mac build metadata at ${macBuildMetaPath}\n${detail}`)
   }
-  return apps[0]
+
+  const app = payload?.repairedAppPath
+  if (typeof app !== 'string' || app.length === 0) {
+    throw new Error(`mac build metadata at ${macBuildMetaPath} does not contain repairedAppPath`)
+  }
+  if (!existsSync(app)) {
+    throw new Error(`Repaired mac app not found: ${app}`)
+  }
+  return app
 }
 
 async function installMacApp() {

@@ -5,7 +5,6 @@ import {
   latestTag,
   releaseDownloadsBaseUrl,
   releaseVersion,
-  releasesUrl,
   repoUrl,
 } from "../data/site";
 
@@ -25,7 +24,7 @@ const platformInstalls = [
     alternateDownloadUrl: `${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-mac-arm64.zip`,
     warningTitle: "Unsigned macOS build",
     warningBody:
-      "The app is not notarized. Gatekeeper can block first launch, so open it from Finder with control-click -> Open or allow it in System Settings.",
+      "The app is ad-hoc signed for bundle integrity but not notarized. Gatekeeper can still block first launch, so open it from Finder with control-click -> Open or allow it in System Settings.",
     npxSummary: "Build the app from the tagged public source on the current Mac.",
     npxRequirements: ["Node.js 24 LTS", "npm / npx", "Xcode Command Line Tools"],
     npxNotes: [
@@ -109,50 +108,16 @@ const platformInstalls = [
     <div class="container install-stack">
       <div class="section-heading section-heading-compact install-heading">
         <p class="eyebrow">Install Token Companion</p>
-        <h1>Install instructions by platform.</h1>
-        <p>
-          Pick a platform, then choose direct download, `npx`, or the wrapper script. The current release and the
-          exact links stay visible here instead of being hidden behind a separate release page.
-        </p>
-      </div>
-
-      <section class="install-release-summary" aria-label="Current release">
-        <div class="install-release-version">
+        <h1>Install by platform.</h1>
+        <p>Choose your platform first. Each tab keeps the exact download links and install commands in one place.</p>
+        <div class="install-version-row" aria-label="Current release">
           <p class="platform-label">Current version</p>
           <div class="release-chip-row">
             <strong>{latestTag}</strong>
             <span>{releaseVersion}</span>
           </div>
         </div>
-
-        <div class="install-release-links">
-          <a class="button button-primary" href={releasesUrl}>Release page</a>
-          <a class="button button-secondary" href={checksumUrl}>SHA256SUMS</a>
-          <a class="button button-secondary" href={shellScriptUrl}>install.sh</a>
-          <a class="button button-secondary" href={powerShellScriptUrl}>install.ps1</a>
-        </div>
-
-        <div class="install-release-grid">
-          <div class="install-release-card">
-            <p class="platform-label">Direct downloads</p>
-            <ul class="detail-list">
-              <li><a href={`${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-mac-arm64.dmg`}>macOS DMG</a></li>
-              <li><a href={`${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-win-x64.exe`}>Windows installer</a></li>
-              <li><a href={`${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-linux-amd64.deb`}>Linux DEB</a></li>
-              <li><a href={`${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-linux-x86_64.rpm`}>Linux RPM</a></li>
-            </ul>
-          </div>
-
-          <div class="install-release-card">
-            <p class="platform-label">Important</p>
-            <ul class="detail-list">
-              <li>Release artifacts are unsigned.</li>
-              <li>`npx` builds locally from the tagged public source.</li>
-              <li>The wrapper scripts call the same installer flow without the npm bootstrapper entry point.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
+      </div>
 
       <div class="platform-switcher" data-platform-switcher>
         <div class="platform-tabs" role="tablist" aria-label="Platform selection">
@@ -181,28 +146,9 @@ const platformInstalls = [
               hidden={index === 0 ? undefined : true}
               data-platform-panel={platform.id}
             >
-              <div class="install-choice-grid install-choice-grid-three">
+              <div class="install-choice-grid install-choice-grid-stack">
                 <article class="install-choice">
                   <p class="platform-label">Option 1</p>
-                  <h3>{platform.releaseTitle}</h3>
-                  <p>{platform.releaseSummary}</p>
-                  <div class="button-row install-card-actions">
-                    <a class="button button-primary" href={platform.primaryDownloadUrl}>{platform.primaryDownloadLabel}</a>
-                    {platform.alternateDownloadUrl && platform.alternateDownloadLabel ? (
-                      <a class="button button-secondary" href={platform.alternateDownloadUrl}>{platform.alternateDownloadLabel}</a>
-                    ) : null}
-                  </div>
-                  <div class="install-warning-block">
-                    <p class="install-warning-title">{platform.warningTitle}</p>
-                    <p class="install-warning">{platform.warningBody}</p>
-                    <p class="install-warning-meta">
-                      Verify with <a href={checksumUrl}>SHA256SUMS</a>.
-                    </p>
-                  </div>
-                </article>
-
-                <article class="install-choice">
-                  <p class="platform-label">Option 2</p>
                   <h3>Build locally with npx</h3>
                   <p>{platform.npxSummary}</p>
                   <pre class="code-block"><code>{npxInstall}</code></pre>
@@ -241,7 +187,7 @@ const platformInstalls = [
                 </article>
 
                 <article class="install-choice">
-                  <p class="platform-label">Option 3</p>
+                  <p class="platform-label">Option 2</p>
                   <h3>{platform.scriptTitle}</h3>
                   <p>{platform.scriptSummary}</p>
                   <pre class="code-block"><code>{platform.scriptCommand}</code></pre>
@@ -264,6 +210,23 @@ const platformInstalls = [
                         <a class="button button-secondary" href={shellScriptUrl}>Open install.sh</a>
                       )}
                     </div>
+                  </div>
+                </article>
+
+                <article class="install-choice">
+                  <p class="platform-label">Option 3</p>
+                  <h3>{platform.releaseTitle}</h3>
+                  <p>{platform.releaseSummary}</p>
+                  <div class="button-row install-card-actions">
+                    <a class="button button-primary" href={platform.primaryDownloadUrl}>{platform.primaryDownloadLabel}</a>
+                    {platform.alternateDownloadUrl && platform.alternateDownloadLabel ? (
+                      <a class="button button-secondary" href={platform.alternateDownloadUrl}>{platform.alternateDownloadLabel}</a>
+                    ) : null}
+                  </div>
+                  <div class="install-warning-block">
+                    <p class="install-warning-title">{platform.warningTitle}</p>
+                    <p class="install-warning">{platform.warningBody}</p>
+                    <p class="install-warning-meta">Verify with <a href={checksumUrl}>SHA256SUMS</a>.</p>
                   </div>
                 </article>
               </div>

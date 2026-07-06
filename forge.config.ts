@@ -11,7 +11,7 @@ import { rendererConfig } from './webpack.renderer.config'
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    appBundleId: 'com.pawelzarzycki.tokencompanion',
+    appBundleId: 'com.pzarzycki.tokencompanion',
     appCategoryType: 'public.app-category.developer-tools',
     executableName: 'token-companion',
     icon: resolve('resources/icon')
