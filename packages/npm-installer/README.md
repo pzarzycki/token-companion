@@ -8,7 +8,7 @@
 npx token-companion
 ```
 
-If `npx` is missing, install Node.js 24 or newer first:
+If `npx` is missing, install Node.js 22.12.0 or newer first:
 
 https://nodejs.org/en/download
 

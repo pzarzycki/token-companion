@@ -27,7 +27,7 @@ const platformInstalls = [
     warningBody:
       "The app is not notarized. Gatekeeper can block first launch, so open it from Finder with control-click -> Open or allow it in System Settings.",
     npxSummary: "Build the app from the tagged public source on the current Mac.",
-    npxRequirements: ["Node.js 24 LTS", "npm / npx", "Xcode Command Line Tools"],
+    npxRequirements: ["Node.js 22.12.0+", "npm / npx", "Xcode Command Line Tools"],
     npxNotes: [
       "Builds on the Mac that will run the app.",
       "Copies Token Companion.app into ~/Applications by default.",
@@ -55,7 +55,7 @@ const platformInstalls = [
     warningBody:
       "SmartScreen can block the installer. If that happens, choose More info, then Run anyway. That is expected for an unsigned executable.",
     npxSummary: "Build the Windows installer locally from the tagged public source.",
-    npxRequirements: ["Node.js 24 LTS", "npm / npx"],
+    npxRequirements: ["Node.js 22.12.0+", "npm / npx"],
     npxNotes: [
       "Builds a local NSIS installer, then runs it.",
       "The install is per-user and adds a Start Menu entry plus uninstall support.",
@@ -83,7 +83,7 @@ const platformInstalls = [
     warningBody:
       "These are convenience artifacts, not signed distro packages. Verify the checksum first and use the package format that matches your system.",
     npxSummary: "Build native packages locally from the tagged public source.",
-    npxRequirements: ["Node.js 24 LTS", "npm / npx", "build-essential", "Python 3", "fakeroot", "dpkg", "rpm"],
+    npxRequirements: ["Node.js 22.12.0+", "npm / npx", "build-essential", "Python 3", "fakeroot", "dpkg", "rpm"],
     npxNotes: [
       "Builds native .deb and .rpm packages on the current machine.",
       "Installs with apt, dnf, or rpm when matching tools are available.",

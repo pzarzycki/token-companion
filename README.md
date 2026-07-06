@@ -52,7 +52,7 @@ Warning:
 
 ### Option 2: build locally with `npx`
 
-Prerequisite: Node.js 24 LTS or newer. `npm` and `npx` are included with the standard Node.js install. Install Node.js from https://nodejs.org/en/download if `npx` is missing.
+Prerequisite: Node.js 22.12.0 or newer. `npm` and `npx` are included with the standard Node.js install. Install Node.js from https://nodejs.org/en/download if `npx` is missing.
 
 ```bash
 npx token-companion@latest
@@ -97,7 +97,7 @@ Token Companion uses [Electron Forge](https://www.electronforge.io/) for develop
 
 ### Prerequisites
 
-- Node.js 24 LTS or newer with npm and npx
+- Node.js 22.12.0 or newer with npm and npx
 - macOS: Xcode Command Line Tools
 - Linux: `build-essential`, Python 3, `fakeroot`, and `rpm`
 
