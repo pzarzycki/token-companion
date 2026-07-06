@@ -15,9 +15,9 @@
     "claude-opus-4-0": { "label": "Claude Opus 4", "input": 15.0, "output": 75.0 },
     "claude-sonnet-5": {
       "label": "Claude Sonnet 5",
-      "input": 3.0,
-      "output": 15.0,
-      "note": "Intro pricing $2/$10 per MTok through 2026-08-31"
+      "input": 2.0,
+      "output": 10.0,
+      "note": "Intro pricing through 2026-08-31; standard pricing becomes $3/$15 per MTok on 2026-09-01"
     },
     "claude-sonnet-4-6": { "label": "Claude Sonnet 4.6", "input": 3.0, "output": 15.0 },
     "claude-sonnet-4-5": { "label": "Claude Sonnet 4.5", "input": 3.0, "output": 15.0 },
