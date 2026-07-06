@@ -67,9 +67,13 @@ jobs:
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Help
 
       - name: Prepare Windows signing certificate
-        if: runner.os == 'Windows' && secrets.WINDOWS_SIGNING_CERT_BASE64 != ''
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          if ([string]::IsNullOrWhiteSpace('${{ secrets.WINDOWS_SIGNING_CERT_BASE64 }}')) {
+            Write-Host 'No Windows signing certificate configured; continuing unsigned.'
+            exit 0
+          }
           $certPath = Join-Path $env:RUNNER_TEMP 'windows-signing-cert.pfx'
           [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String('${{ secrets.WINDOWS_SIGNING_CERT_BASE64 }}'))
           "CSC_LINK=$certPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
