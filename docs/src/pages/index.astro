@@ -13,35 +13,28 @@ import {
 } from "../data/site";
 import { withBase } from "../lib/paths";
 
-const heroStats = [
-  { label: "Source of truth", value: "Local records" },
-  { label: "Audit path", value: "Session drilldown" },
-  { label: "Pricing", value: "Editable rates" },
-];
-
 const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
+const heroProof = ["Open source", "Local files", "Inspectable rules"];
 ---
 
 <BaseLayout description={siteDescription}>
   <section class="hero">
-    <div class="container hero-grid">
+    <div class="container hero-grid hero-grid-dense">
       <div class="hero-copy">
-        <p class="eyebrow">Desktop app for local usage records</p>
-        <h1>Track token cost and inspect the session trail.</h1>
-        <p class="hero-lead">
-          Token Companion reads local usage files, applies editable pricing, and lets you inspect the session details
-          behind each total: source files, per-session attribution, drilldown, and visible gaps when stores do not
-          expose usage.
+        <p class="eyebrow">Open-source local usage inspector</p>
+        <h1>Token Companion</h1>
+        <p class="hero-subhead">
+          Open-source desktop app for inspecting Claude and Codex token cost from local session records.
         </p>
+        <p class="hero-lead">See model cost, session attribution, and drilldown details from files already on your machine.</p>
+        <p class="hero-lead hero-lead-secondary">No account, no upload, no closed calculator.</p>
         <div class="button-row">
-          <a class="button button-primary" href={withBase("/install/")}>Install instructions</a>
+          <a class="button button-primary" href={withBase("/install/")}>Install</a>
+          <a class="button button-secondary button-source" href={repoUrl}>View on GitHub</a>
         </div>
-        <ul class="stat-grid">
-          {heroStats.map((item) => (
-            <li class="stat-card">
-              <strong>{item.value}</strong>
-              <span>{item.label}</span>
-            </li>
+        <ul class="hero-proof-row">
+          {heroProof.map((item) => (
+            <li>{item}</li>
           ))}
         </ul>
       </div>
@@ -164,6 +157,7 @@ const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
       <aside class="note-panel">
         <p class="eyebrow">Why totals are defensible</p>
         <h3>Counting rules stay explicit.</h3>
+        <p>Parser logic and counting rules are published in the repository.</p>
         <ul class="detail-list">
           <li>Claude usage is counted per assistant message and deduplicated by message id.</li>
           <li>Codex session totals are taken from the last cumulative snapshot in each session file.</li>

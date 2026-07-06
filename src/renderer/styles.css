@@ -93,6 +93,22 @@ body {
 }
 .update-link {
   color: var(--warn);
+  background: rgba(245, 166, 35, 0.12);
+  border: 1px solid rgba(245, 166, 35, 0.25);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+.update-link:focus-visible,
+.topbar-link:focus-visible,
+.refresh:focus-visible,
+.tab:focus-visible,
+.primary:focus-visible,
+.modal-close:focus-visible,
+.modal-footer-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .tab {
   background: transparent;
@@ -367,6 +383,197 @@ body {
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+/* Update modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top, rgba(108, 140, 255, 0.14), transparent 38%),
+    rgba(7, 9, 13, 0.82);
+  backdrop-filter: blur(12px);
+}
+.update-modal {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: min(720px, calc(100vh - 48px));
+  overflow-y: auto;
+  padding: 28px;
+  border: 1px solid rgba(108, 140, 255, 0.22);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(108, 140, 255, 0.12), transparent 26%),
+    linear-gradient(180deg, #202839 0%, #131924 100%);
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.update-modal h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.15;
+}
+.modal-kicker {
+  margin-bottom: 10px;
+  color: #9fb7ff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.modal-copy,
+.modal-note {
+  color: #b9c2d8;
+  line-height: 1.6;
+}
+.modal-copy {
+  margin: 14px 0 0;
+  max-width: 48ch;
+}
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.update-version-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 24px 0;
+}
+.update-version-card {
+  flex: 1;
+  min-width: 0;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(9, 13, 21, 0.48);
+}
+.update-version-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.update-version-card-latest {
+  border-color: rgba(74, 222, 128, 0.32);
+  background: linear-gradient(180deg, rgba(74, 222, 128, 0.12), rgba(9, 13, 21, 0.55));
+}
+.update-version-label {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.update-version-arrow {
+  color: #9fb7ff;
+  font-size: 24px;
+}
+.terminal-card {
+  margin-top: 8px;
+  border: 1px solid rgba(108, 140, 255, 0.2);
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(7, 10, 16, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.terminal-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+}
+.terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+.terminal-dot-red {
+  background: #ff6b6b;
+}
+.terminal-dot-amber {
+  background: #f5a623;
+}
+.terminal-dot-green {
+  background: #4ade80;
+}
+.terminal-label {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.update-command {
+  margin: 0;
+  padding: 18px 20px 20px;
+  overflow-x: auto;
+  color: #f5f7fb;
+  font-family: 'SF Mono', ui-monospace, monospace;
+  font-size: 17px;
+  line-height: 1.5;
+}
+.modal-note {
+  margin: 16px 0 0;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+.modal-footer-link {
+  display: inline-flex;
+  margin-top: 18px;
+  color: #9fb7ff;
+  text-decoration: none;
+}
+.modal-footer-link:hover {
+  color: #d4deff;
+}
+
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: 16px;
+  }
+  .update-modal {
+    padding: 22px 18px 18px;
+    border-radius: 18px;
+  }
+  .update-modal h2 {
+    font-size: 24px;
+    padding-right: 36px;
+  }
+  .update-version-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .update-version-arrow {
+    align-self: center;
+    transform: rotate(90deg);
+  }
+  .update-command {
+    font-size: 15px;
+  }
 }
 
 /* Gap panel */

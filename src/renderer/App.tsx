@@ -16,6 +16,7 @@ import { DesktopGap } from './components/DesktopGap'
 import { Filters } from './components/Filters'
 
 type Tab = 'dashboard' | 'models' | 'sessions' | 'pricing'
+const UPDATE_COMMAND = 'npx token-companion@latest'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -31,6 +32,7 @@ export function App(): React.JSX.Element {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('dashboard')
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
   const [filter, setFilter] = useState<AggregateFilter>(() => {
     const d = new Date()
     const toDate = d.toISOString().slice(0, 10)
@@ -83,6 +85,21 @@ export function App(): React.JSX.Element {
     }
   }, [])
 
+  useEffect(() => {
+    if (!isUpdateModalOpen) return
+
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        setIsUpdateModalOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isUpdateModalOpen])
+
   const aggregates = useMemo(() => {
     if (!scan || !pricing) return null
     return aggregate(scan.records, pricing, filter)
@@ -132,15 +149,14 @@ export function App(): React.JSX.Element {
               v{appInfo?.version ?? '...'}
             </span>
             {appInfo?.hasUpdate && (
-              <a
+              <button
                 className="update-link"
-                href={appInfo.latestUrl}
-                title={`Open the latest release on GitHub (v${appInfo.latestVersion})`}
-                target="_blank"
-                rel="noreferrer"
+                type="button"
+                title={`Show update instructions for v${appInfo.latestVersion}`}
+                onClick={() => setIsUpdateModalOpen(true)}
               >
                 Update available
-              </a>
+              </button>
             )}
           </div>
           <button className="refresh" onClick={() => void loadAll()} disabled={loading}>
@@ -197,6 +213,80 @@ export function App(): React.JSX.Element {
             </details>
           )}
         </>
+      )}
+
+      {appInfo?.hasUpdate && appInfo.latestVersion && isUpdateModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsUpdateModalOpen(false)}>
+          <section
+            className="update-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="update-modal-title"
+            aria-describedby="update-modal-description"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modal-close"
+              aria-label="Close update dialog"
+              onClick={() => setIsUpdateModalOpen(false)}
+            >
+              ×
+            </button>
+            <div className="modal-kicker">New version detected</div>
+            <h2 id="update-modal-title">Token Companion v{appInfo.latestVersion} is available</h2>
+            <p id="update-modal-description" className="modal-copy">
+              Your current app version is v{appInfo.version}. Token Companion updates are installed
+              from a terminal rather than inside the desktop app.
+            </p>
+            <div className="update-version-row" aria-label="Version comparison">
+              <div className="update-version-card">
+                <span className="update-version-label">Installed</span>
+                <strong>v{appInfo.version}</strong>
+              </div>
+              <div className="update-version-arrow" aria-hidden="true">
+                →
+              </div>
+              <div className="update-version-card update-version-card-latest">
+                <span className="update-version-label">Latest</span>
+                <strong>v{appInfo.latestVersion}</strong>
+              </div>
+            </div>
+            <div className="terminal-card">
+              <div className="terminal-card-head">
+                <span className="terminal-dot terminal-dot-red" />
+                <span className="terminal-dot terminal-dot-amber" />
+                <span className="terminal-dot terminal-dot-green" />
+                <span className="terminal-label">Terminal</span>
+              </div>
+              <pre className="update-command" aria-label="Install command">
+                <code>{UPDATE_COMMAND}</code>
+              </pre>
+            </div>
+            <p className="modal-note">
+              Run that command in your terminal to fetch the newest published installer package and
+              follow the checked-in install flow.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="primary"
+                onClick={() => setIsUpdateModalOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+            <a
+              className="modal-footer-link"
+              href={appInfo.repoUrl}
+              title="Open the Token Companion project on GitHub"
+              target="_blank"
+              rel="noreferrer"
+            >
+              View the project on GitHub
+            </a>
+          </section>
+        </div>
       )}
     </div>
   )

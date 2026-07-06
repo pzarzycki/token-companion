@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 export const siteName = "Token Companion";
 export const siteDescription =
-  "Desktop app that reads local Claude and Codex usage records, applies editable pricing, and keeps the session evidence behind each total visible.";
+  "Desktop app that reads local Claude and Codex usage records, applies editable pricing, and keeps the session evidence behind each total inspectable.";
 
 export const repoUrl = "https://github.com/pzarzycki/token-companion";
 export const releasesUrl = `${repoUrl}/releases/latest`;
@@ -34,11 +34,11 @@ export const checksumUrl = `${releaseDownloadsBaseUrl}/SHA256SUMS`;
 export const featureCards = [
   {
     title: "Reads files on disk",
-    body: "Uses the usage fields written by Claude and Codex instead of estimating totals from what the chat UI happens to show.",
+    body: "Uses usage fields written by Claude and Codex instead of estimating totals from a partial chat view.",
   },
   {
     title: "Keeps source attached",
-    body: "Each session keeps its source, model list, and working directory so cost can be tied back to a repo or experiment.",
+    body: "Each session keeps its source, model list, and working directory so totals stay tied to a concrete run.",
   },
   {
     title: "Shows gaps instead of guessing",
@@ -50,7 +50,7 @@ export const featureCards = [
   },
   {
     title: "Keeps pricing editable",
-    body: "Input, output, cache-read, and cache-write prices can be adjusted per model from the app.",
+    body: "Input, output, cache-read, and cache-write prices can be corrected per model from the app.",
   },
   {
     title: "Handles mixed tool use",
@@ -62,7 +62,7 @@ export const walkthrough = [
   {
     eyebrow: "Sessions",
     title: "Session attribution",
-    body: "The session list keeps agent source, model, cost, and working directory together so each total stays tied to a concrete run.",
+    body: "The session list keeps agent source, model, cost, and working directory together so totals can be traced back to a concrete run.",
     points: [
       "Useful when several repos share one machine.",
       "Global filters narrow the list by date and source.",
@@ -73,7 +73,7 @@ export const walkthrough = [
   {
     eyebrow: "Drilldown",
     title: "Per-session details",
-    body: "A session detail view shows how token usage accumulated across conversation entries, including thinking, tool-use, and tool-result blocks where the source records expose them.",
+    body: "A session detail view shows how token usage accumulated across conversation entries, including thinking, tool-use, and tool-result blocks where the records expose them.",
     points: [
       "Claude replay duplicates are deduplicated on message id.",
       "Codex cumulative totals come from the last session event.",
