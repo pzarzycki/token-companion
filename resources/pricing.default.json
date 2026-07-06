@@ -25,26 +25,29 @@
     "claude-haiku-4-5": { "label": "Claude Haiku 4.5", "input": 1.0, "output": 5.0 },
     "claude-haiku-4-5-20251001": { "label": "Claude Haiku 4.5", "input": 1.0, "output": 5.0 },
     "claude-3-5-haiku-20241022": { "label": "Claude Haiku 3.5", "input": 0.8, "output": 4.0 },
-    "gpt-5.5": {
-      "label": "GPT-5.5 (Codex)",
-      "input": 1.25,
-      "output": 10.0,
-      "verify": true,
-      "note": "PLACEHOLDER — confirm current OpenAI pricing"
-    },
+    "gpt-5.5": { "label": "GPT-5.5", "input": 5.0, "output": 30.0 },
+    "gpt-5.4": { "label": "GPT-5.4", "input": 2.5, "output": 15.0 },
+    "gpt-5.3-codex": { "label": "GPT-5.3 Codex", "input": 1.75, "output": 14.0 },
     "gpt-5-codex": {
-      "label": "GPT-5 Codex",
-      "input": 1.25,
-      "output": 10.0,
+      "label": "GPT-5 Codex (legacy alias)",
+      "input": 1.75,
+      "output": 14.0,
       "verify": true,
-      "note": "PLACEHOLDER — confirm current OpenAI pricing"
+      "note": "Mapped to published gpt-5.3-codex pricing; OpenAI docs do not list gpt-5-codex separately."
+    },
+    "codex-auto-review": {
+      "label": "Codex Auto Review",
+      "input": 1.75,
+      "output": 14.0,
+      "verify": true,
+      "note": "Mapped to published gpt-5.3-codex pricing; OpenAI docs do not list codex-auto-review separately."
     },
     "gpt-5": {
-      "label": "GPT-5",
-      "input": 1.25,
-      "output": 10.0,
+      "label": "GPT-5 (legacy alias)",
+      "input": 2.5,
+      "output": 15.0,
       "verify": true,
-      "note": "PLACEHOLDER — confirm current OpenAI pricing"
+      "note": "Mapped to published gpt-5.4 pricing; OpenAI docs do not list a bare gpt-5 model on the pricing page."
     }
   }
 }

@@ -36,13 +36,13 @@ There are two normal install paths:
 
 ### Option 1: direct download
 
-Current release: `v0.1.4`
+Current release: `v0.1.5`
 
-- macOS ARM64 DMG: [Token.Companion-0.1.4-mac-arm64.dmg](https://github.com/pzarzycki/token-companion/releases/download/v0.1.4/Token.Companion-0.1.4-mac-arm64.dmg)
-- Windows x64 installer: [Token.Companion-0.1.4-win-x64.exe](https://github.com/pzarzycki/token-companion/releases/download/v0.1.4/Token.Companion-0.1.4-win-x64.exe)
-- Linux amd64 DEB: [Token.Companion-0.1.4-linux-amd64.deb](https://github.com/pzarzycki/token-companion/releases/download/v0.1.4/Token.Companion-0.1.4-linux-amd64.deb)
-- Linux x86_64 RPM: [Token.Companion-0.1.4-linux-x86_64.rpm](https://github.com/pzarzycki/token-companion/releases/download/v0.1.4/Token.Companion-0.1.4-linux-x86_64.rpm)
-- Checksums: [SHA256SUMS](https://github.com/pzarzycki/token-companion/releases/download/v0.1.4/SHA256SUMS)
+- macOS ARM64 DMG: [Token.Companion-0.1.5-mac-arm64.dmg](https://github.com/pzarzycki/token-companion/releases/download/v0.1.5/Token.Companion-0.1.5-mac-arm64.dmg)
+- Windows x64 installer: [Token.Companion-0.1.5-win-x64.exe](https://github.com/pzarzycki/token-companion/releases/download/v0.1.5/Token.Companion-0.1.5-win-x64.exe)
+- Linux amd64 DEB: [Token.Companion-0.1.5-linux-amd64.deb](https://github.com/pzarzycki/token-companion/releases/download/v0.1.5/Token.Companion-0.1.5-linux-amd64.deb)
+- Linux x86_64 RPM: [Token.Companion-0.1.5-linux-x86_64.rpm](https://github.com/pzarzycki/token-companion/releases/download/v0.1.5/Token.Companion-0.1.5-linux-x86_64.rpm)
+- Checksums: [SHA256SUMS](https://github.com/pzarzycki/token-companion/releases/download/v0.1.5/SHA256SUMS)
 
 Warning:
 
@@ -62,7 +62,7 @@ Useful flags:
 
 ```bash
 npx token-companion@latest --dry-run
-npx token-companion@latest --version v0.1.4
+npx token-companion@latest --version v0.1.5
 ```
 
 - `--dry-run`: print checks, build commands, and install target.
@@ -187,7 +187,7 @@ Trusted Publishing setup:
 Why the installer downloads GitHub source:
 
 - The published npm package intentionally stays small and only contains the installer entry point.
-- The real application source is taken from the matching GitHub tag tarball such as `https://github.com/pzarzycki/token-companion/archive/refs/tags/v0.1.4.tar.gz`.
+- The real application source is taken from the matching GitHub tag tarball such as `https://github.com/pzarzycki/token-companion/archive/refs/tags/v0.1.5.tar.gz`.
 - This keeps the published npm artifact small, makes the release source explicit, and ensures the local build uses the same tagged source as the GitHub release.
 
 Recovery path:
@@ -211,7 +211,7 @@ This writes `resources/icon.png`, `resources/icon.icns`, and `resources/icon.ico
 
 ## Pricing
 
-Default rates live in [resources/pricing.default.json](resources/pricing.default.json). They are bundled into the app and copied to `<userData>/pricing.json` on first run, which the in-app Pricing tab edits. OpenAI / Codex entries marked `verify` should be confirmed before relying on totals.
+Default rates live in [resources/pricing.default.json](resources/pricing.default.json). They are bundled into the app and copied to `<userData>/pricing.json` on first run, which the in-app Pricing tab edits. Entries marked `verify` are unpublished aliases mapped to the closest documented model price and should be confirmed before relying on totals.
 
 ## Architecture
 
@@ -226,7 +226,7 @@ src/
 ## Known Gaps
 
 - Plain desktop-chat stores are detected but not yet costed because they do not expose token usage directly.
-- Some OpenAI / Codex pricing defaults are still placeholders.
+- Some unpublished OpenAI / Codex model aliases still require manual confirmation.
 
 ## License
 

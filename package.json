@@ -1,7 +1,7 @@
 {
   "name": "token-companion-desktop",
   "productName": "Token Companion",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "description": "Local analyzer for token spend across Claude and Codex sessions",
   "main": ".webpack/main",
