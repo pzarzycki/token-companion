@@ -25,9 +25,48 @@ export async function loadDefaultPricing(): Promise<PricingTable> {
   return JSON.parse(JSON.stringify(DEFAULT_PRICING)) as PricingTable
 }
 
+function mergeMissingDefaults(
+  existing: PricingTable,
+  defaults: PricingTable
+): { table: PricingTable; changed: boolean } {
+  let changed = false
+
+  const merged: PricingTable = {
+    cacheMultipliers: {
+      read: existing.cacheMultipliers?.read ?? defaults.cacheMultipliers.read,
+      write5m: existing.cacheMultipliers?.write5m ?? defaults.cacheMultipliers.write5m,
+      write1h: existing.cacheMultipliers?.write1h ?? defaults.cacheMultipliers.write1h
+    },
+    models: { ...existing.models }
+  }
+
+  for (const [model, entry] of Object.entries(defaults.models)) {
+    if (!merged.models[model]) {
+      merged.models[model] = JSON.parse(JSON.stringify(entry)) as PricingEntry
+      changed = true
+    }
+  }
+
+  if (
+    merged.cacheMultipliers.read !== existing.cacheMultipliers?.read ||
+    merged.cacheMultipliers.write5m !== existing.cacheMultipliers?.write5m ||
+    merged.cacheMultipliers.write1h !== existing.cacheMultipliers?.write1h
+  ) {
+    changed = true
+  }
+
+  return { table: merged, changed }
+}
+
 export async function loadPricing(): Promise<PricingTable> {
   try {
-    return await readJson<PricingTable>(userPricingPath())
+    const existing = await readJson<PricingTable>(userPricingPath())
+    const defaults = await loadDefaultPricing()
+    const merged = mergeMissingDefaults(existing, defaults)
+    if (merged.changed) {
+      await savePricing(merged.table)
+    }
+    return merged.table
   } catch {
     // First run (or corrupted): fall back to bundled default and persist it.
     const def = await loadDefaultPricing()
