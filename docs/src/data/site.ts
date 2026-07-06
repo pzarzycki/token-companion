@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 export const siteName = "Token Companion";
 export const siteDescription =
-  "Desktop app that reads local Claude and Codex usage records, applies editable pricing, and shows cost by model, session, and project.";
+  "Desktop app that reads local Claude and Codex usage records, applies editable pricing, and keeps the session evidence behind each total visible.";
 
 export const repoUrl = "https://github.com/pzarzycki/token-companion";
 export const releasesUrl = `${repoUrl}/releases/latest`;
@@ -34,46 +34,35 @@ export const checksumUrl = `${releaseDownloadsBaseUrl}/SHA256SUMS`;
 export const featureCards = [
   {
     title: "Reads files on disk",
-    body: "Uses the usage fields written by Claude and Codex instead of estimating cost from visible prompts and replies.",
+    body: "Uses the usage fields written by Claude and Codex instead of estimating totals from what the chat UI happens to show.",
+  },
+  {
+    title: "Keeps source attached",
+    body: "Each session keeps its source, model list, and working directory so cost can be tied back to a repo or experiment.",
+  },
+  {
+    title: "Shows gaps instead of guessing",
+    body: "If a store does not expose token usage, the app leaves the gap visible instead of inventing a cost.",
+  },
+  {
+    title: "Keeps parser rules explicit",
+    body: "Counting rules stay visible, including dedup behavior and how cumulative session totals are selected.",
   },
   {
     title: "Keeps pricing editable",
     body: "Input, output, cache-read, and cache-write prices can be adjusted per model from the app.",
   },
   {
-    title: "Keeps the source attached",
-    body: "Each session keeps its source, model list, and working directory so cost can be tied back to a repo or experiment.",
-  },
-  {
     title: "Handles mixed tool use",
     body: "Claude CLI, Claude Desktop agent modes, VS Code, and Codex CLI records can be viewed in one place.",
-  },
-  {
-    title: "Separates token classes",
-    body: "Input, output, cache-read, cache-write, and reasoning tokens stay separate in the model and session views.",
-  },
-  {
-    title: "Does not upload sessions",
-    body: "Scanning, aggregation, and cost calculation run locally. There is no account, telemetry, or cloud sync.",
   },
 ] as const;
 
 export const walkthrough = [
   {
-    eyebrow: "Models",
-    title: "Model totals",
-    body: "The model table ranks cost and keeps token classes separate so missing prices and expensive models are easy to spot.",
-    points: [
-      "Token classes stay distinct.",
-      "Missing or unverified prices remain visible.",
-    ],
-    image: "/scr-models.jpg",
-    alt: "Token Companion models table",
-  },
-  {
     eyebrow: "Sessions",
     title: "Session attribution",
-    body: "The session list keeps the agent source, model, cost, and working directory together.",
+    body: "The session list keeps agent source, model, cost, and working directory together so each total stays tied to a concrete run.",
     points: [
       "Useful when several repos share one machine.",
       "Global filters narrow the list by date and source.",
@@ -84,13 +73,24 @@ export const walkthrough = [
   {
     eyebrow: "Drilldown",
     title: "Per-session details",
-    body: "A session detail view shows how token usage accumulated across conversation entries.",
+    body: "A session detail view shows how token usage accumulated across conversation entries, including thinking, tool-use, and tool-result blocks where the source records expose them.",
     points: [
       "Claude replay duplicates are deduplicated on message id.",
       "Codex cumulative totals come from the last session event.",
     ],
     image: "/scr-drill-down.jpg",
     alt: "Token Companion session drilldown",
+  },
+  {
+    eyebrow: "Models",
+    title: "Model totals",
+    body: "The model table ranks cost and keeps token classes separate so missing prices and expensive models are easy to spot.",
+    points: [
+      "Token classes stay distinct.",
+      "Missing or unverified prices remain visible.",
+    ],
+    image: "/scr-models.jpg",
+    alt: "Token Companion models table",
   },
   {
     eyebrow: "Pricing",

@@ -36,13 +36,13 @@ There are two normal install paths:
 
 ### Option 1: direct download
 
-Current release: `v0.1.5`
+Current release: `v0.1.6`
 
-- macOS ARM64 DMG: [Token.Companion-0.1.5-mac-arm64.dmg](https://github.com/pzarzycki/token-companion/releases/download/v0.1.5/Token.Companion-0.1.5-mac-arm64.dmg)
-- Windows x64 installer: [Token.Companion-0.1.5-win-x64.exe](https://github.com/pzarzycki/token-companion/releases/download/v0.1.5/Token.Companion-0.1.5-win-x64.exe)
-- Linux amd64 DEB: [Token.Companion-0.1.5-linux-amd64.deb](https://github.com/pzarzycki/token-companion/releases/download/v0.1.5/Token.Companion-0.1.5-linux-amd64.deb)
-- Linux x86_64 RPM: [Token.Companion-0.1.5-linux-x86_64.rpm](https://github.com/pzarzycki/token-companion/releases/download/v0.1.5/Token.Companion-0.1.5-linux-x86_64.rpm)
-- Checksums: [SHA256SUMS](https://github.com/pzarzycki/token-companion/releases/download/v0.1.5/SHA256SUMS)
+- macOS ARM64 DMG: [Token.Companion-0.1.6-mac-arm64.dmg](https://github.com/pzarzycki/token-companion/releases/download/v0.1.6/Token.Companion-0.1.6-mac-arm64.dmg)
+- Windows x64 installer: [Token.Companion-0.1.6-win-x64.exe](https://github.com/pzarzycki/token-companion/releases/download/v0.1.6/Token.Companion-0.1.6-win-x64.exe)
+- Linux amd64 DEB: [Token.Companion-0.1.6-linux-amd64.deb](https://github.com/pzarzycki/token-companion/releases/download/v0.1.6/Token.Companion-0.1.6-linux-amd64.deb)
+- Linux x86_64 RPM: [Token.Companion-0.1.6-linux-x86_64.rpm](https://github.com/pzarzycki/token-companion/releases/download/v0.1.6/Token.Companion-0.1.6-linux-x86_64.rpm)
+- Checksums: [SHA256SUMS](https://github.com/pzarzycki/token-companion/releases/download/v0.1.6/SHA256SUMS)
 
 Warning:
 
@@ -62,7 +62,7 @@ Useful flags:
 
 ```bash
 npx token-companion@latest --dry-run
-npx token-companion@latest --version v0.1.5
+npx token-companion@latest --version v0.1.6
 ```
 
 - `--dry-run`: print checks, build commands, and install target.
@@ -189,7 +189,7 @@ Trusted Publishing setup:
 Why the installer downloads GitHub source:
 
 - The published npm package intentionally stays small and only contains the installer entry point.
-- The real application source is taken from the matching GitHub tag tarball such as `https://github.com/pzarzycki/token-companion/archive/refs/tags/v0.1.5.tar.gz`.
+- The real application source is taken from the matching GitHub tag tarball such as `https://github.com/pzarzycki/token-companion/archive/refs/tags/v0.1.6.tar.gz`.
 - This keeps the published npm artifact small, makes the release source explicit, and ensures the local build uses the same tagged source as the GitHub release.
 
 Recovery path:

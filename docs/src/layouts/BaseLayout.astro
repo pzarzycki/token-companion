@@ -16,7 +16,7 @@ const navLinks = [
   { href: withBase("/#features"), label: "Features" },
   { href: withBase("/#sources"), label: "What it reads" },
   { href: withBase("/install/"), label: "Install" },
-  { href: repoUrl, label: "GitHub" },
+  { href: repoUrl, label: "GitHub", className: "site-nav-link-strong" },
 ];
 ---
 
@@ -61,7 +61,7 @@ const navLinks = [
           </a>
           <nav class="site-nav" aria-label="Primary">
             {navLinks.map((link) => (
-              <a href={link.href}>{link.label}</a>
+              <a href={link.href} class={link.className}>{link.label}</a>
             ))}
           </nav>
         </div>
