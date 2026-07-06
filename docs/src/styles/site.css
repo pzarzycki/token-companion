@@ -565,11 +565,17 @@ tbody tr:first-child td {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.install-choice-grid-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .install-choice {
   padding: 1.5rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #ffffff;
+  display: grid;
+  align-content: start;
 }
 
 .install-card-actions {
@@ -610,6 +616,75 @@ tbody tr:first-child td {
 
 .install-subsection {
   margin-top: 1.25rem;
+}
+
+.install-page-top {
+  padding-top: 3rem;
+}
+
+.install-stack {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.install-heading {
+  max-width: 52rem;
+  margin-bottom: 0;
+}
+
+.install-heading h1 {
+  max-width: 12ch;
+}
+
+.install-release-summary {
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+.install-release-version strong {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.release-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.release-chip-row span {
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.install-release-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 1.25rem;
+}
+
+.install-release-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.install-release-card {
+  padding: 1.15rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.install-release-card .detail-list {
+  margin-top: 0.35rem;
 }
 
 .jump-links {
@@ -694,6 +769,8 @@ tbody tr:first-child td {
   .platform-grid,
   .detail-grid,
   .install-choice-grid,
+  .install-choice-grid-three,
+  .install-release-grid,
   .build-commands {
     grid-template-columns: 1fr;
   }

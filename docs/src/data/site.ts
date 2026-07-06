@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 export const siteName = "Token Companion";
 export const siteDescription =
   "Desktop app that reads local Claude and Codex usage records, applies editable pricing, and shows cost by model, session, and project.";
@@ -7,6 +10,26 @@ export const releasesUrl = `${repoUrl}/releases/latest`;
 export const actionsUrl = `${repoUrl}/actions`;
 export const buildWorkflowUrl = `${repoUrl}/actions/workflows/build.yml`;
 export const licenseUrl = `${repoUrl}/blob/main/LICENSE`;
+
+function readReleasePackageVersion() {
+  const candidates = [resolve(process.cwd(), "package.json"), resolve(process.cwd(), "..", "package.json")];
+
+  for (const candidate of candidates) {
+    if (!existsSync(candidate)) continue;
+    const parsed = JSON.parse(readFileSync(candidate, "utf8")) as { name?: string; version?: string };
+    if (parsed.name === "token-companion-desktop" && parsed.version) {
+      return parsed.version;
+    }
+  }
+
+  throw new Error("Could not resolve the Token Companion release version from package.json.");
+}
+
+const packageJson = { version: readReleasePackageVersion() };
+export const releaseVersion = packageJson.version;
+export const latestTag = `v${releaseVersion}`;
+export const releaseDownloadsBaseUrl = `${repoUrl}/releases/download/${latestTag}`;
+export const checksumUrl = `${releaseDownloadsBaseUrl}/SHA256SUMS`;
 
 export const featureCards = [
   {
@@ -109,19 +132,19 @@ export const platformCards = [
   {
     id: "macos",
     name: "macOS",
-    packageType: "npx source build",
-    note: "Run the npx installer, which builds locally and copies Token Companion.app to ~/Applications by default.",
+    packageType: "Direct, npx, or script",
+    note: "Install instructions include the unsigned DMG, the npx bootstrapper, and the install.sh wrapper script.",
   },
   {
     id: "windows",
     name: "Windows",
-    packageType: "npx source build",
-    note: "Run the npx installer, which builds a local NSIS installer and runs a per-user install with Start Menu and uninstall support.",
+    packageType: "Direct, npx, or script",
+    note: "Install instructions include the unsigned installer, the npx bootstrapper, and the install.ps1 wrapper script.",
   },
   {
     id: "linux",
     name: "Linux",
-    packageType: "npx source build",
-    note: "Run the npx installer, which builds native .deb and .rpm packages and installs the matching package.",
+    packageType: "Direct, npx, or script",
+    note: "Install instructions include release packages, the npx bootstrapper, and the install.sh wrapper script.",
   },
 ] as const;

@@ -1,110 +1,158 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { repoUrl } from "../data/site";
+import {
+  checksumUrl,
+  latestTag,
+  releaseDownloadsBaseUrl,
+  releaseVersion,
+  releasesUrl,
+  repoUrl,
+} from "../data/site";
 
 const npxInstall = `npx token-companion@latest`;
-const releaseVersion = "0.1.4";
-const latestTag = `v${releaseVersion}`;
-const checksumUrl = `${repoUrl}/releases/download/${latestTag}/SHA256SUMS`;
+const shellScriptUrl = `${repoUrl}/raw/${latestTag}/install.sh`;
+const powerShellScriptUrl = `${repoUrl}/raw/${latestTag}/install.ps1`;
 
 const platformInstalls = [
   {
     id: "macos",
     name: "macOS",
     releaseTitle: "Download the unsigned DMG",
-    releaseSummary: "Best for Apple Silicon Macs when you want the shortest path to install.",
-    primaryDownloadLabel: "Download macOS DMG",
-    primaryDownloadUrl: `${repoUrl}/releases/download/${latestTag}/Token.Companion-${releaseVersion}-mac-arm64.dmg`,
-    alternateDownloadLabel: "ZIP build",
-    alternateDownloadUrl: `${repoUrl}/releases/download/${latestTag}/Token.Companion-${releaseVersion}-mac-arm64.zip`,
+    releaseSummary: "Fastest path when you want the current Apple Silicon build directly.",
+    primaryDownloadLabel: `Token.Companion-${releaseVersion}-mac-arm64.dmg`,
+    primaryDownloadUrl: `${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-mac-arm64.dmg`,
+    alternateDownloadLabel: `Token.Companion-${releaseVersion}-mac-arm64.zip`,
+    alternateDownloadUrl: `${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-mac-arm64.zip`,
     warningTitle: "Unsigned macOS build",
     warningBody:
-      "The app is not notarized. Gatekeeper will warn on first launch. If macOS blocks it, open Finder, control-click the app, choose Open, then confirm in the dialog or System Settings.",
-    npxTitle: "Build locally with npx",
-    npxSummary: "Best when you want the app built from public source on your own machine.",
-    requirements: ["Node.js 24 LTS", "npm / npx", "Xcode Command Line Tools"],
-    notes: [
+      "The app is not notarized. Gatekeeper can block first launch, so open it from Finder with control-click -> Open or allow it in System Settings.",
+    npxSummary: "Build the app from the tagged public source on the current Mac.",
+    npxRequirements: ["Node.js 24 LTS", "npm / npx", "Xcode Command Line Tools"],
+    npxNotes: [
       "Builds on the Mac that will run the app.",
-      "Installs Token Companion.app under ~/Applications by default.",
-      "Use --install-dir <path> to choose another destination.",
+      "Copies Token Companion.app into ~/Applications by default.",
+      "Use --install-dir <path> to change the destination.",
+    ],
+    scriptTitle: "Install via shell script",
+    scriptSummary: "Use the checked-in wrapper script instead of invoking the npm bootstrapper directly.",
+    scriptCommand: `curl -fsSL ${shellScriptUrl} | sh`,
+    scriptNotes: [
+      "Calls the same source installer flow as the repo script.",
+      "Downloads the tagged source if you run it outside a local clone.",
+      "Accepts --version, --dry-run, --package-only, and --install-dir.",
     ],
   },
   {
     id: "windows",
     name: "Windows",
     releaseTitle: "Download the unsigned installer",
-    releaseSummary: "Best for the standard per-user Windows install with Start Menu and uninstall support.",
-    primaryDownloadLabel: "Download Windows installer",
-    primaryDownloadUrl: `${repoUrl}/releases/download/${latestTag}/Token.Companion-${releaseVersion}-win-x64.exe`,
+    releaseSummary: "Fastest path for the standard per-user Windows install with Start Menu and uninstall support.",
+    primaryDownloadLabel: `Token.Companion-${releaseVersion}-win-x64.exe`,
+    primaryDownloadUrl: `${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-win-x64.exe`,
     alternateDownloadLabel: null,
     alternateDownloadUrl: null,
     warningTitle: "Unsigned Windows build",
     warningBody:
-      "SmartScreen may block the installer. If that happens, choose More info, then Run anyway. This is expected because the binary is not signed with a Microsoft-trusted certificate.",
-    npxTitle: "Build locally with npx",
-    npxSummary: "Best when you want to avoid downloading a prebuilt executable and prefer a local build.",
-    requirements: ["Node.js 24 LTS", "npm / npx"],
-    notes: [
+      "SmartScreen can block the installer. If that happens, choose More info, then Run anyway. That is expected for an unsigned executable.",
+    npxSummary: "Build the Windows installer locally from the tagged public source.",
+    npxRequirements: ["Node.js 24 LTS", "npm / npx"],
+    npxNotes: [
       "Builds a local NSIS installer, then runs it.",
       "The install is per-user and adds a Start Menu entry plus uninstall support.",
-      "Use --dry-run first if you want to inspect the exact build steps.",
+      "Use --dry-run first if you want to inspect the build steps.",
+    ],
+    scriptTitle: "Install via PowerShell script",
+    scriptSummary: "Use the checked-in wrapper script instead of invoking the npm bootstrapper directly.",
+    scriptCommand: `powershell -ExecutionPolicy Bypass -Command "irm ${powerShellScriptUrl} | iex"`,
+    scriptNotes: [
+      "Calls the same source installer flow as the repo script.",
+      "Downloads the tagged source if you run it outside a local clone.",
+      "Accepts -Version, -DryRun, -PackageOnly, and -InstallDir.",
     ],
   },
   {
     id: "linux",
     name: "Linux",
     releaseTitle: "Download the unsigned package",
-    releaseSummary: "Best when you want a ready-made package instead of running the build locally.",
-    primaryDownloadLabel: "Download Linux DEB",
-    primaryDownloadUrl: `${repoUrl}/releases/download/${latestTag}/Token.Companion-${releaseVersion}-linux-amd64.deb`,
-    alternateDownloadLabel: "RPM build",
-    alternateDownloadUrl: `${repoUrl}/releases/download/${latestTag}/Token.Companion-${releaseVersion}-linux-x86_64.rpm`,
+    releaseSummary: "Fastest path when you want a ready-made package instead of building locally.",
+    primaryDownloadLabel: `Token.Companion-${releaseVersion}-linux-amd64.deb`,
+    primaryDownloadUrl: `${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-linux-amd64.deb`,
+    alternateDownloadLabel: `Token.Companion-${releaseVersion}-linux-x86_64.rpm`,
+    alternateDownloadUrl: `${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-linux-x86_64.rpm`,
     warningTitle: "Unsigned Linux packages",
     warningBody:
-      "These packages are convenience artifacts, not signed distro packages. Verify the checksum before installing and use the package format that matches your distribution.",
-    npxTitle: "Build locally with npx",
-    npxSummary: "Best when you want the package produced on the current machine and installed with local tooling.",
-    requirements: ["Node.js 24 LTS", "npm / npx", "build-essential", "Python 3", "fakeroot", "dpkg", "rpm"],
-    notes: [
+      "These are convenience artifacts, not signed distro packages. Verify the checksum first and use the package format that matches your system.",
+    npxSummary: "Build native packages locally from the tagged public source.",
+    npxRequirements: ["Node.js 24 LTS", "npm / npx", "build-essential", "Python 3", "fakeroot", "dpkg", "rpm"],
+    npxNotes: [
       "Builds native .deb and .rpm packages on the current machine.",
-      "Installs with apt, dnf, or rpm when the matching tools are available.",
-      "Use --package-only if you only want the built package files.",
+      "Installs with apt, dnf, or rpm when matching tools are available.",
+      "Use --package-only if you only want the package files.",
+    ],
+    scriptTitle: "Install via shell script",
+    scriptSummary: "Use the checked-in wrapper script instead of invoking the npm bootstrapper directly.",
+    scriptCommand: `curl -fsSL ${shellScriptUrl} | sh`,
+    scriptNotes: [
+      "Calls the same source installer flow as the repo script.",
+      "Downloads the tagged source if you run it outside a local clone.",
+      "Accepts --version, --dry-run, and --package-only.",
     ],
   },
 ] as const;
 ---
 
-<BaseLayout title="Install" description="Install Token Companion from a direct platform download or build it locally with npx on macOS, Windows, and Linux.">
-  <section class="hero install-hero">
-    <div class="container hero-grid hero-grid-wide">
-      <div class="hero-copy install-copy">
+<BaseLayout
+  title="Install"
+  description="Install Token Companion from a direct release artifact, the npx bootstrapper, or the checked-in wrapper scripts on macOS, Windows, and Linux."
+>
+  <section class="section install-page-top">
+    <div class="container install-stack">
+      <div class="section-heading section-heading-compact install-heading">
         <p class="eyebrow">Install Token Companion</p>
-        <h1>Pick your platform, then choose direct download or local build.</h1>
-        <p class="hero-lead">
-          Every platform has two paths. You can download the current release artifact directly, or you can run
-          <code>npx</code> and build from public source on your own machine.
+        <h1>Install instructions by platform.</h1>
+        <p>
+          Pick a platform, then choose direct download, `npx`, or the wrapper script. The current release and the
+          exact links stay visible here instead of being hidden behind a separate release page.
         </p>
       </div>
 
-      <aside class="note-panel install-summary">
-        <p class="eyebrow">Important</p>
-        <h3>Prebuilt downloads are unsigned.</h3>
-        <ul class="detail-list">
-          <li>The direct download path is faster, but each artifact can trigger OS trust warnings.</li>
-          <li>The <code>npx</code> path keeps the build local and prints original build errors when something fails.</li>
-          <li>Checksums for {latestTag} are published with the release.</li>
-        </ul>
-      </aside>
-    </div>
-  </section>
+      <section class="install-release-summary" aria-label="Current release">
+        <div class="install-release-version">
+          <p class="platform-label">Current version</p>
+          <div class="release-chip-row">
+            <strong>{latestTag}</strong>
+            <span>{releaseVersion}</span>
+          </div>
+        </div>
 
-  <section id="install-options" class="section section-alt">
-    <div class="container">
-      <div class="section-heading section-heading-compact">
-        <p class="eyebrow">Installation</p>
-        <h2>Exactly two options for the selected platform.</h2>
-        <p>Select a platform. The page defaults to the current browser platform, and each tab shows one direct-download card plus one local-build card.</p>
-      </div>
+        <div class="install-release-links">
+          <a class="button button-primary" href={releasesUrl}>Release page</a>
+          <a class="button button-secondary" href={checksumUrl}>SHA256SUMS</a>
+          <a class="button button-secondary" href={shellScriptUrl}>install.sh</a>
+          <a class="button button-secondary" href={powerShellScriptUrl}>install.ps1</a>
+        </div>
+
+        <div class="install-release-grid">
+          <div class="install-release-card">
+            <p class="platform-label">Direct downloads</p>
+            <ul class="detail-list">
+              <li><a href={`${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-mac-arm64.dmg`}>macOS DMG</a></li>
+              <li><a href={`${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-win-x64.exe`}>Windows installer</a></li>
+              <li><a href={`${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-linux-amd64.deb`}>Linux DEB</a></li>
+              <li><a href={`${releaseDownloadsBaseUrl}/Token.Companion-${releaseVersion}-linux-x86_64.rpm`}>Linux RPM</a></li>
+            </ul>
+          </div>
+
+          <div class="install-release-card">
+            <p class="platform-label">Important</p>
+            <ul class="detail-list">
+              <li>Release artifacts are unsigned.</li>
+              <li>`npx` builds locally from the tagged public source.</li>
+              <li>The wrapper scripts call the same installer flow without the npm bootstrapper entry point.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
 
       <div class="platform-switcher" data-platform-switcher>
         <div class="platform-tabs" role="tablist" aria-label="Platform selection">
@@ -114,7 +162,7 @@ const platformInstalls = [
               type="button"
               role="tab"
               id={`tab-${platform.id}`}
-              aria-controls={`panel-${platform.id}`}
+              aria-controls={platform.id}
               aria-selected={index === 0 ? "true" : "false"}
               data-platform-tab={platform.id}
             >
@@ -127,13 +175,13 @@ const platformInstalls = [
           {platformInstalls.map((platform, index) => (
             <section
               class="platform-panel"
-              id={`panel-${platform.id}`}
+              id={platform.id}
               role="tabpanel"
               aria-labelledby={`tab-${platform.id}`}
               hidden={index === 0 ? undefined : true}
               data-platform-panel={platform.id}
             >
-              <div class="install-choice-grid">
+              <div class="install-choice-grid install-choice-grid-three">
                 <article class="install-choice">
                   <p class="platform-label">Option 1</p>
                   <h3>{platform.releaseTitle}</h3>
@@ -155,24 +203,15 @@ const platformInstalls = [
 
                 <article class="install-choice">
                   <p class="platform-label">Option 2</p>
-                  <h3>{platform.npxTitle}</h3>
+                  <h3>Build locally with npx</h3>
                   <p>{platform.npxSummary}</p>
-                  <pre class="code-block"><code>{platform.id === "windows" ? `npx token-companion@latest` : npxInstall}</code></pre>
+                  <pre class="code-block"><code>{npxInstall}</code></pre>
 
                   <div class="install-subsection">
                     <p class="command-label">Requirements</p>
                     <ul class="detail-list">
-                      {platform.requirements.map((requirement) => (
+                      {platform.npxRequirements.map((requirement) => (
                         <li>{requirement}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div class="install-subsection">
-                    <p class="command-label">What it does</p>
-                    <ul class="detail-list">
-                      {platform.notes.map((note) => (
-                        <li>{note}</li>
                       ))}
                     </ul>
                   </div>
@@ -190,33 +229,46 @@ const platformInstalls = [
                       </div>
                     </div>
                   </div>
+
+                  <div class="install-subsection">
+                    <p class="command-label">What it does</p>
+                    <ul class="detail-list">
+                      {platform.npxNotes.map((note) => (
+                        <li>{note}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+
+                <article class="install-choice">
+                  <p class="platform-label">Option 3</p>
+                  <h3>{platform.scriptTitle}</h3>
+                  <p>{platform.scriptSummary}</p>
+                  <pre class="code-block"><code>{platform.scriptCommand}</code></pre>
+
+                  <div class="install-subsection">
+                    <p class="command-label">What it does</p>
+                    <ul class="detail-list">
+                      {platform.scriptNotes.map((note) => (
+                        <li>{note}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div class="install-subsection">
+                    <p class="command-label">Script source</p>
+                    <div class="button-row install-card-actions">
+                      {platform.id === "windows" ? (
+                        <a class="button button-secondary" href={powerShellScriptUrl}>Open install.ps1</a>
+                      ) : (
+                        <a class="button button-secondary" href={shellScriptUrl}>Open install.sh</a>
+                      )}
+                    </div>
+                  </div>
                 </article>
               </div>
             </section>
           ))}
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="manual-build" class="section">
-    <div class="container">
-      <div class="section-heading">
-        <p class="eyebrow">Manual build</p>
-        <h2>Use the same commands yourself.</h2>
-      </div>
-
-      <div class="command-stack build-commands">
-        <div>
-          <p class="command-label">Clone and install</p>
-          <pre class="code-block"><code>{`git clone ${repoUrl}.git
-cd token-companion
-npm ci`}</code></pre>
-        </div>
-        <div>
-          <p class="command-label">Build distributables</p>
-          <pre class="code-block"><code>{`npm run typecheck
-npm run dist`}</code></pre>
         </div>
       </div>
     </div>
@@ -237,7 +289,7 @@ npm run dist`}</code></pre>
       const tabs = Array.from(switcher.querySelectorAll("[data-platform-tab]"));
       const panels = Array.from(switcher.querySelectorAll("[data-platform-panel]"));
 
-      const activate = (platform) => {
+      const activate = (platform, shouldUpdateHash = true) => {
         tabs.forEach((tab) => {
           const selected = tab.dataset.platformTab === platform;
           tab.setAttribute("aria-selected", String(selected));
@@ -247,11 +299,20 @@ npm run dist`}</code></pre>
         panels.forEach((panel) => {
           panel.hidden = panel.dataset.platformPanel !== platform;
         });
+
+        if (shouldUpdateHash && window.location.hash !== `#${platform}`) {
+          history.replaceState(null, "", `#${platform}`);
+        }
       };
 
+      const hashPlatform = window.location.hash.slice(1);
       const detectedPlatform = detectPlatform();
-      const initialPlatform = tabs.some((tab) => tab.dataset.platformTab === detectedPlatform) ? detectedPlatform : "macos";
-      activate(initialPlatform);
+      const initialPlatform = tabs.some((tab) => tab.dataset.platformTab === hashPlatform)
+        ? hashPlatform
+        : tabs.some((tab) => tab.dataset.platformTab === detectedPlatform)
+          ? detectedPlatform
+          : "macos";
+      activate(initialPlatform, Boolean(hashPlatform));
 
       tabs.forEach((tab) => {
         tab.addEventListener("click", () => {

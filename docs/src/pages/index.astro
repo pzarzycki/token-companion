@@ -3,9 +3,10 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import {
   actionsUrl,
   featureCards,
+  latestTag,
   platformCards,
-  releasesUrl,
   repoUrl,
+  releaseVersion,
   siteDescription,
   sourceRows,
   walkthrough,
@@ -32,8 +33,7 @@ const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
           cost by model, session, and project folder.
         </p>
         <div class="button-row">
-          <a class="button button-primary" href={withBase("/install/")}>Install with npx</a>
-          <a class="button button-secondary" href={releasesUrl}>Unsigned releases</a>
+          <a class="button button-primary" href={withBase("/install/")}>Install instructions</a>
         </div>
         <ul class="stat-grid">
           {heroStats.map((item) => (
@@ -180,10 +180,10 @@ const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
     <div class="container">
       <div class="section-heading">
         <p class="eyebrow">Install</p>
-        <h2>Install with npx or use unsigned releases.</h2>
+        <h2>Open the install page and pick the path that fits your machine.</h2>
         <p>
-          The install notes keep the `npx` source-build path first and leave platform-specific signing and packaging
-          details visible instead of hiding them behind a generic download button.
+          The install page keeps the current version, release links, platform tabs, direct downloads, `npx`, and the
+          wrapper scripts visible in one place. Current release: <code>{latestTag}</code> ({releaseVersion}).
         </p>
       </div>
 
@@ -201,15 +201,14 @@ const compatibility = ["Claude CLI", "Claude Desktop", "VS Code", "Codex CLI"];
   </section>
 
   <section class="section">
-    <div class="container cta-band">
-      <div>
-        <p class="eyebrow">Local records, local calculation</p>
-        <h2>Install Token Companion and scan your existing session history.</h2>
+      <div class="container cta-band">
+        <div>
+          <p class="eyebrow">Local records, local calculation</p>
+          <h2>Install Token Companion and scan your existing session history.</h2>
+        </div>
+        <div class="button-row">
+          <a class="button button-primary" href={withBase("/install/")}>Install instructions</a>
+        </div>
       </div>
-      <div class="button-row">
-        <a class="button button-primary" href={withBase("/install/")}>Install with npx</a>
-        <a class="button button-secondary" href={releasesUrl}>Unsigned releases</a>
-      </div>
-    </div>
-  </section>
+    </section>
 </BaseLayout>
