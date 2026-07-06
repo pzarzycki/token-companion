@@ -10,12 +10,13 @@ const archArg = process.argv[3] ?? process.arch
 const macBundleId = 'com.pzarzycki.tokencompanion'
 const macDistDir = join(root, 'out', 'dist')
 const macBuildMetaPath = join(root, 'out', 'mac-build.json')
-const macHelperBundleIds = new Map([
-  ['Token Companion Helper.app', `${macBundleId}.helper`],
-  ['Token Companion Helper (GPU).app', `${macBundleId}.helper.GPU`],
-  ['Token Companion Helper (Renderer).app', `${macBundleId}.helper.Renderer`],
-  ['Token Companion Helper (Plugin).app', `${macBundleId}.helper.Plugin`]
-])
+const macHelperBundleNames = [
+  'Token Companion Helper.app',
+  'Token Companion Helper (GPU).app',
+  'Token Companion Helper (Renderer).app',
+  'Token Companion Helper (Plugin).app'
+]
+const macHelperBundleIdPrefix = `${macBundleId}.helper`
 let npmCliPath
 
 const supportedPlatforms = new Set(['win', 'mac', 'linux'])
@@ -188,7 +189,7 @@ async function validateMacBundleShape(appPath) {
   }
 
   const frameworksDir = join(appPath, 'Contents', 'Frameworks')
-  for (const [helperName, helperBundleId] of macHelperBundleIds) {
+  for (const helperName of macHelperBundleNames) {
     const helperPath = join(frameworksDir, helperName)
     if (!existsSync(helperPath)) {
       throw new Error(`Missing helper app: ${helperName}`)
@@ -196,7 +197,7 @@ async function validateMacBundleShape(appPath) {
 
     const helperInfoPlist = join(helperPath, 'Contents', 'Info.plist')
     const actualBundleId = readPlistValue(helperInfoPlist, 'CFBundleIdentifier')
-    if (actualBundleId !== helperBundleId) {
+    if (!actualBundleId.startsWith(macHelperBundleIdPrefix)) {
       throw new Error(`Unexpected helper bundle id for ${helperName}: ${actualBundleId}`)
     }
   }
@@ -231,7 +232,7 @@ async function macSignatureTargets(appPath) {
   const targets = [appPath]
   const frameworksDir = join(appPath, 'Contents', 'Frameworks')
 
-  for (const helperName of macHelperBundleIds.keys()) {
+  for (const helperName of macHelperBundleNames) {
     const helperPath = join(frameworksDir, helperName)
     targets.push(helperPath)
     const helperExecutable = await bundleExecutablePath(helperPath)
