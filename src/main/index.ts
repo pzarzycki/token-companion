@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { IPC } from '@shared/ipc'
-import type { PricingTable, SourceId } from '@shared/types'
+import type { AppInfo, PricingTable, SourceId } from '@shared/types'
 import { scanAll } from './scan'
 import { loadPricing, savePricing, resetPricing } from './pricing'
 import { parseSessionEntries } from './parsers/sessionEntries'
@@ -20,6 +20,75 @@ app.disableHardwareAcceleration()
 app.setName('Token Companion')
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.pawelzarzycki.tokencompanion')
+}
+
+const REPO_URL = 'https://github.com/pzarzycki/token-companion'
+const LATEST_RELEASE_URL = `${REPO_URL}/releases/latest`
+const LATEST_RELEASE_API_URL =
+  'https://api.github.com/repos/pzarzycki/token-companion/releases/latest'
+
+let appInfoPromise: Promise<AppInfo> | null = null
+
+function normalizeVersion(raw: string): number[] {
+  const match = raw.trim().replace(/^v/i, '').match(/^\d+(?:\.\d+)*/)
+  if (!match) return [0]
+  return match[0].split('.').map((part) => Number.parseInt(part, 10) || 0)
+}
+
+function isVersionNewer(candidate: string, current: string): boolean {
+  const left = normalizeVersion(candidate)
+  const right = normalizeVersion(current)
+  const len = Math.max(left.length, right.length)
+  for (let i = 0; i < len; i += 1) {
+    const a = left[i] ?? 0
+    const b = right[i] ?? 0
+    if (a > b) return true
+    if (a < b) return false
+  }
+  return false
+}
+
+async function loadAppInfo(): Promise<AppInfo> {
+  const version = app.getVersion()
+  const fallback: AppInfo = {
+    version,
+    repoUrl: REPO_URL,
+    hasUpdate: false,
+    latestVersion: null,
+    latestUrl: LATEST_RELEASE_URL
+  }
+
+  try {
+    const response = await fetch(LATEST_RELEASE_API_URL, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'User-Agent': `token-companion/${version}`
+      }
+    })
+    if (!response.ok) {
+      throw new Error(`GitHub update check failed: ${response.status} ${response.statusText}`)
+    }
+
+    const payload = (await response.json()) as { tag_name?: unknown; html_url?: unknown }
+    const latestVersion =
+      typeof payload.tag_name === 'string' ? payload.tag_name.replace(/^v/i, '') : null
+    const latestUrl = typeof payload.html_url === 'string' ? payload.html_url : LATEST_RELEASE_URL
+
+    if (!latestVersion) {
+      throw new Error('GitHub update check failed: release tag_name missing')
+    }
+
+    return {
+      version,
+      repoUrl: REPO_URL,
+      hasUpdate: isVersionNewer(latestVersion, version),
+      latestVersion,
+      latestUrl
+    }
+  } catch (error) {
+    console.error('Update check failed', error)
+    return fallback
+  }
 }
 
 function isAllowedExternalUrl(rawUrl: string): boolean {
@@ -76,6 +145,10 @@ function createWindow(): void {
 function registerIpc(): void {
   ipcMain.handle(IPC.scan, async () => scanAll())
   ipcMain.handle(IPC.getPricing, async () => loadPricing())
+  ipcMain.handle(IPC.getAppInfo, async () => {
+    if (!appInfoPromise) appInfoPromise = loadAppInfo()
+    return appInfoPromise
+  })
   ipcMain.handle(IPC.savePricing, async (_e, table: PricingTable) => {
     await savePricing(table)
     return table
@@ -102,6 +175,7 @@ function setDevDockIcon(): void {
 }
 
 app.whenReady().then(() => {
+  appInfoPromise = loadAppInfo()
   setDevDockIcon()
   registerIpc()
   createWindow()

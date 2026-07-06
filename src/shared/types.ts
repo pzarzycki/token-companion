@@ -172,3 +172,11 @@ export interface Aggregates {
   sessionCount: number
   recordCount: number
 }
+
+export interface AppInfo {
+  version: string
+  repoUrl: string
+  hasUpdate: boolean
+  latestVersion: string | null
+  latestUrl: string
+}

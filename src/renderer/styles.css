@@ -46,6 +46,13 @@ body {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+.topbar-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 220px;
+}
 .brand {
   font-weight: 600;
   font-size: 15px;
@@ -58,6 +65,33 @@ body {
 .tabs {
   display: flex;
   gap: 4px;
+}
+.app-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.topbar-link,
+.update-link {
+  color: var(--muted);
+  text-decoration: none;
+}
+.topbar-link:hover,
+.update-link:hover {
+  color: var(--text);
+}
+.version-chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.update-link {
+  color: var(--warn);
 }
 .tab {
   background: transparent;
@@ -89,6 +123,20 @@ body {
 .refresh:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+@media (max-width: 980px) {
+  .topbar {
+    flex-wrap: wrap;
+  }
+  .tabs {
+    order: 3;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .refresh {
+    margin-left: 0;
+  }
 }
 
 /* Layout */

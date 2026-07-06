@@ -7,6 +7,7 @@ const api: RendererApi = {
   getPricing: () => ipcRenderer.invoke(IPC.getPricing),
   savePricing: (table: PricingTable) => ipcRenderer.invoke(IPC.savePricing, table),
   resetPricing: () => ipcRenderer.invoke(IPC.resetPricing),
+  getAppInfo: () => ipcRenderer.invoke(IPC.getAppInfo),
   getSessionEntries: (filePath: string, sessionId: string, source: SourceId) =>
     ipcRenderer.invoke(IPC.getSessionEntries, filePath, sessionId, source)
 }

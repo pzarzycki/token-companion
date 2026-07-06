@@ -1,4 +1,10 @@
-import type { ScanResult, PricingTable, SessionEntries, SourceId } from './types'
+import type {
+  AppInfo,
+  ScanResult,
+  PricingTable,
+  SessionEntries,
+  SourceId
+} from './types'
 
 /** IPC channel names, shared between main and preload. */
 export const IPC = {
@@ -6,7 +12,8 @@ export const IPC = {
   getPricing: 'pricing:get',
   savePricing: 'pricing:save',
   resetPricing: 'pricing:reset',
-  getSessionEntries: 'session:entries'
+  getSessionEntries: 'session:entries',
+  getAppInfo: 'app:info'
 } as const
 
 /** Shape of the API exposed on window.api via contextBridge. */
@@ -16,4 +23,5 @@ export interface RendererApi {
   savePricing(table: PricingTable): Promise<PricingTable>
   resetPricing(): Promise<PricingTable>
   getSessionEntries(filePath: string, sessionId: string, source: SourceId): Promise<SessionEntries>
+  getAppInfo(): Promise<AppInfo>
 }

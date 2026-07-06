@@ -1,6 +1,7 @@
 import type React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import type {
+  AppInfo,
   ScanResult,
   PricingTable,
   AggregateFilter,
@@ -26,6 +27,7 @@ const TABS: { id: Tab; label: string }[] = [
 export function App(): React.JSX.Element {
   const [scan, setScan] = useState<ScanResult | null>(null)
   const [pricing, setPricing] = useState<PricingTable | null>(null)
+  const [appInfo, setAppInfo] = useState<AppInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('dashboard')
@@ -58,6 +60,24 @@ export function App(): React.JSX.Element {
     void loadAll()
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadAppInfo(): Promise<void> {
+      try {
+        const info = await window.api.getAppInfo()
+        if (!cancelled) setAppInfo(info)
+      } catch (e) {
+        console.error('Failed to load app info', e)
+      }
+    }
+
+    void loadAppInfo()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const aggregates = useMemo(() => {
     if (!scan || !pricing) return null
     return aggregate(scan.records, pricing, filter)
@@ -71,8 +91,42 @@ export function App(): React.JSX.Element {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">
-          <span className="brand-mark">◆</span> Token Companion
+        <div className="topbar-left">
+          <div className="brand">
+            <span className="brand-mark">◆</span> Token Companion
+          </div>
+          <div className="app-meta">
+            <a
+              className="topbar-link"
+              href={appInfo?.repoUrl ?? 'https://github.com/pzarzycki/token-companion'}
+              title="Open the Token Companion project on GitHub"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub
+            </a>
+            <span
+              className="version-chip"
+              title={
+                appInfo?.latestVersion && appInfo.hasUpdate
+                  ? `Current version ${appInfo.version}. Latest version ${appInfo.latestVersion} is available.`
+                  : `Current version ${appInfo?.version ?? 'loading...'}`
+              }
+            >
+              v{appInfo?.version ?? '...'}
+            </span>
+            {appInfo?.hasUpdate && (
+              <a
+                className="update-link"
+                href={appInfo.latestUrl}
+                title={`Open the latest release on GitHub (v${appInfo.latestVersion})`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Update available
+              </a>
+            )}
+          </div>
         </div>
         <nav className="tabs">
           {TABS.map((t) => (
