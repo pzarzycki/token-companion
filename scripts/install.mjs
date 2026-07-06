@@ -60,6 +60,10 @@ function commandLine(command, args) {
   return [command, ...args.map((arg) => (/\s/.test(arg) ? JSON.stringify(arg) : arg))].join(' ')
 }
 
+function shellPath(filePath) {
+  return /\s/.test(filePath) ? JSON.stringify(filePath) : filePath
+}
+
 function spawnCommand(command) {
   if (platform !== 'win32') return command
   if (command === 'where') return 'where.exe'
@@ -231,6 +235,7 @@ async function installMacApp() {
   const app = await findMacApp()
   const installDir = resolve(options.installDir ?? join(homedir(), 'Applications'))
   const dest = join(installDir, 'Token Companion.app')
+  const defaultInstallDir = resolve(join(homedir(), 'Applications'))
 
   console.log(`macOS app: ${app}`)
   console.log(`Install target: ${dest}`)
@@ -238,8 +243,67 @@ async function installMacApp() {
 
   await fs.mkdir(installDir, { recursive: true })
   await fs.rm(dest, { recursive: true, force: true })
-  await fs.cp(app, dest, { recursive: true })
-  console.log(`Installed Token Companion to ${dest}`)
+  await copyMacAppBundle(app, dest)
+  normalizeMacAppBundleMetadata(dest)
+  resignMacApp(dest)
+  registerMacApp(dest)
+  if (installDir === defaultInstallDir) {
+    console.log(`Installed Token Companion to your user Applications folder: ${dest}`)
+  } else {
+    console.log(`Installed Token Companion to ${dest}`)
+  }
+  console.log(`Run it now with: open ${shellPath(dest)}`)
+}
+
+async function copyMacAppBundle(source, dest) {
+  const result = spawnSync('ditto', [source, dest], {
+    stdio: 'ignore'
+  })
+
+  if (result.error) throw result.error
+  if (result.status !== 0) {
+    throw new Error(`Failed to copy macOS app bundle with ditto: ${source} -> ${dest}`)
+  }
+}
+
+function registerMacApp(appPath) {
+  const lsregister = launchServicesRegisterPath()
+  if (!existsSync(lsregister)) return
+
+  const result = spawnSync(lsregister, ['-f', appPath], {
+    stdio: 'ignore'
+  })
+
+  if (result.status !== 0) {
+    console.warn(`Launch Services registration failed for ${appPath}`)
+  }
+}
+
+function resignMacApp(appPath) {
+  const result = spawnSync('codesign', ['--force', '--deep', '--sign', '-', appPath], {
+    stdio: 'ignore'
+  })
+
+  if (result.error) throw result.error
+  if (result.status !== 0) {
+    throw new Error(`Failed to ad-hoc sign macOS app bundle: ${appPath}`)
+  }
+}
+
+function normalizeMacAppBundleMetadata(appPath) {
+  const plistPath = join(appPath, 'Contents', 'Info.plist')
+  const result = spawnSync('/usr/libexec/PlistBuddy', ['-c', 'Set :CFBundleDisplayName Token Companion', plistPath], {
+    stdio: 'ignore'
+  })
+
+  if (result.error) throw result.error
+  if (result.status !== 0) {
+    throw new Error(`Failed to update CFBundleDisplayName for macOS app bundle: ${plistPath}`)
+}
+
+function launchServicesRegisterPath() {
+  return '/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister'
+}
 }
 
 async function findWindowsInstaller() {

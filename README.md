@@ -24,7 +24,7 @@ Local, privacy-first desktop analytics for Claude and Codex usage records alread
 - 100% local. No accounts, no telemetry, no cloud sync.
 - Exact token counts from real usage records, not estimates.
 - Editable per-model pricing in the app.
-- One view across Claude CLI, Claude Desktop agent modes, VS Code, and Codex CLI.
+- One view across Claude CLI, Claude Desktop Cowork/agent modes, VS Code, and Codex CLI.
 - Session, model, and project-folder attribution.
 
 ## Install
@@ -82,6 +82,7 @@ Install details: [docs](https://pzarzycki.github.io/token-companion/install/).
 | Source | Location | Token data |
 |---|---|---|
 | Claude CLI + Claude Desktop agent modes + VS Code | `~/.claude/projects/**/*.jsonl` | Per-message `usage` |
+| Claude 1p Cowork | `~/Library/Application Support/Claude/local-agent-mode-sessions/**/audit.jsonl` | Result usage and exact reported cost |
 | Claude 3p title-gen | `~/Library/Application Support/Claude-3p/title-gen/**/*.jsonl` | Usage records |
 | Codex CLI | `~/.codex/sessions/**/*.jsonl` | Last cumulative `token_count` per session |
 | Claude/Codex desktop plain chat | IndexedDB / LevelDB stores | Discovery only; no token counts exposed |

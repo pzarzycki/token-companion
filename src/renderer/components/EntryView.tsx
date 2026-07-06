@@ -38,23 +38,45 @@ export function EntryView({ entries, targetRequestId, renderAll }: Props): React
 
   const assistant = entries[assistantIdx]
   // The user turn immediately before this assistant turn
-  const user = assistantIdx > 0 && entries[assistantIdx - 1].role === 'user'
-    ? entries[assistantIdx - 1]
-    : null
+  const user =
+    entries
+      .slice(0, assistantIdx)
+      .reverse()
+      .find((entry) => entry.role === 'user') ?? null
 
   return (
-    <div className="entry-pair">
-      {user && <EntryTurn entry={user} />}
-      <EntryTurn entry={assistant} />
+    <div className="entry-pair entry-with-audit">
+      <div className="entry-focus">
+        {user && <EntryTurn entry={user} />}
+        <EntryTurn entry={assistant} />
+      </div>
+      <details className="audit-trace">
+        <summary>Full audit trace ({entries.length} events)</summary>
+        <div className="audit-events">
+          {entries.map((entry, i) => (
+            <EntryTurn key={i} entry={entry} />
+          ))}
+        </div>
+      </details>
     </div>
   )
 }
 
 function EntryTurn({ entry }: { entry: ConversationEntry }): React.JSX.Element {
+  const label =
+    entry.role === 'user'
+      ? 'User'
+      : entry.role === 'assistant'
+        ? entry.model
+          ? `Assistant · ${entry.model}`
+          : 'Assistant'
+        : entry.title ?? (entry.subtype ? `${entry.role} · ${entry.subtype}` : entry.role)
+
   return (
     <div className={`entry-turn entry-${entry.role}`}>
       <div className="entry-role">
-        {entry.role === 'user' ? 'User' : entry.model ? `Assistant · ${entry.model}` : 'Assistant'}
+        <span>{label}</span>
+        {entry.timestamp && <span className="entry-time">{new Date(entry.timestamp).toLocaleTimeString()}</span>}
       </div>
       <div className="entry-content">
         {entry.content.map((block, i) => (
@@ -71,10 +93,11 @@ function BlockView({ block }: { block: ContentBlock }): React.JSX.Element {
   }
 
   if (block.type === 'thinking') {
+    const thinking = block.thinking.trim()
     return (
       <details className="entry-block block-thinking">
         <summary>Thinking</summary>
-        <pre>{block.thinking}</pre>
+        <pre>{thinking || 'No thinking text recorded in this trace.'}</pre>
       </details>
     )
   }
@@ -104,6 +127,37 @@ function BlockView({ block }: { block: ContentBlock }): React.JSX.Element {
           content.map((b, i) => <BlockView key={i} block={b} />)
         )}
       </details>
+    )
+  }
+
+  if (block.type === 'json') {
+    return (
+      <details className="entry-block block-json" open={block.defaultOpen}>
+        <summary>{block.label}</summary>
+        <pre>{JSON.stringify(block.value, null, 2)}</pre>
+      </details>
+    )
+  }
+
+  if (block.type === 'list') {
+    return (
+      <details className="entry-block block-list" open={block.defaultOpen}>
+        <summary>{block.label}</summary>
+        <div className="entry-list">
+          {block.items.map((item) => (
+            <span key={item} className="entry-pill">{item}</span>
+          ))}
+        </div>
+      </details>
+    )
+  }
+
+  if (block.type === 'metric') {
+    return (
+      <div className="entry-metric">
+        <span>{block.label}</span>
+        <b>{block.value}</b>
+      </div>
     )
   }
 

@@ -54,7 +54,7 @@ export const featureCards = [
   },
   {
     title: "Handles mixed tool use",
-    body: "Claude CLI, Claude Desktop agent modes, VS Code, and Codex CLI records can be viewed in one place.",
+    body: "Claude CLI, Claude Desktop Cowork/agent modes, VS Code, and Codex CLI records can be viewed in one place.",
   },
 ] as const;
 
@@ -110,6 +110,11 @@ export const sourceRows = [
     source: "Claude CLI, Claude Desktop agent modes, and VS Code",
     location: "~/.claude/projects/**/*.jsonl",
     tokenData: "Per-message usage records",
+  },
+  {
+    source: "Claude 1p Cowork sessions",
+    location: "~/Library/Application Support/Claude/local-agent-mode-sessions/**/audit.jsonl",
+    tokenData: "Result usage and exact reported cost",
   },
   {
     source: "Claude 3p title-generation logs",

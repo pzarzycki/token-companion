@@ -6,8 +6,20 @@
   },
   "models": {
     "claude-fable-5": { "label": "Claude Fable 5", "input": 10.0, "output": 50.0 },
+    "claude-fable-5[1m]": {
+      "label": "Claude Fable 5 (1M context)",
+      "input": 10.0,
+      "output": 50.0,
+      "note": "1M context uses standard pricing."
+    },
     "claude-mythos-5": { "label": "Claude Mythos 5", "input": 10.0, "output": 50.0 },
     "claude-opus-4-8": { "label": "Claude Opus 4.8", "input": 5.0, "output": 25.0 },
+    "claude-opus-4-8[1m]": {
+      "label": "Claude Opus 4.8 (1M context)",
+      "input": 5.0,
+      "output": 25.0,
+      "note": "1M context uses standard pricing."
+    },
     "claude-opus-4-7": { "label": "Claude Opus 4.7", "input": 5.0, "output": 25.0 },
     "claude-opus-4-6": { "label": "Claude Opus 4.6", "input": 5.0, "output": 25.0 },
     "claude-opus-4-5": { "label": "Claude Opus 4.5", "input": 5.0, "output": 25.0 },
@@ -17,9 +29,21 @@
       "label": "Claude Sonnet 5",
       "input": 2.0,
       "output": 10.0,
-      "note": "Intro pricing through 2026-08-31; standard pricing becomes $3/$15 per MTok on 2026-09-01"
+      "note": "Intro pricing through 2026-08-31; standard pricing is $3/$15 per MTok starting 2026-09-01."
+    },
+    "claude-sonnet-5[1m]": {
+      "label": "Claude Sonnet 5 (1M context)",
+      "input": 2.0,
+      "output": 10.0,
+      "note": "1M context uses standard pricing. Intro pricing applies through 2026-08-31; standard pricing is $3/$15 per MTok starting 2026-09-01."
     },
     "claude-sonnet-4-6": { "label": "Claude Sonnet 4.6", "input": 3.0, "output": 15.0 },
+    "claude-sonnet-4-6[1m]": {
+      "label": "Claude Sonnet 4.6 (1M context)",
+      "input": 3.0,
+      "output": 15.0,
+      "note": "1M context uses standard pricing."
+    },
     "claude-sonnet-4-5": { "label": "Claude Sonnet 4.5", "input": 3.0, "output": 15.0 },
     "claude-sonnet-4-0": { "label": "Claude Sonnet 4", "input": 3.0, "output": 15.0 },
     "claude-haiku-4-5": { "label": "Claude Haiku 4.5", "input": 1.0, "output": 5.0 },

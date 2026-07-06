@@ -722,6 +722,10 @@ tr.entry-row {
   gap: 0;
   border-top: 1px solid var(--border);
 }
+.entry-focus {
+  display: flex;
+  flex-direction: column;
+}
 .entry-turn {
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
@@ -732,6 +736,15 @@ tr.entry-row {
 .entry-assistant {
   background: #161c2d;
 }
+.entry-system {
+  background: #151923;
+}
+.entry-result {
+  background: #172017;
+}
+.entry-event {
+  background: #171923;
+}
 .entry-role {
   font-size: 10px;
   font-weight: 600;
@@ -739,6 +752,13 @@ tr.entry-row {
   letter-spacing: 0.6px;
   color: var(--muted);
   margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.entry-time {
+  color: #687086;
+  font-weight: 500;
 }
 .entry-content {
   display: flex;
@@ -836,4 +856,71 @@ tr.entry-row {
   color: var(--muted);
   font-size: 11px;
   white-space: pre-wrap;
+}
+
+.audit-trace {
+  border-top: 1px solid var(--border);
+  background: #121722;
+}
+.audit-trace > summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 12px;
+  padding: 10px 16px;
+  user-select: none;
+}
+.audit-events {
+  border-top: 1px solid var(--border);
+}
+.block-json,
+.block-list {
+  background: rgba(148, 163, 184, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  padding: 6px 10px;
+}
+.block-json summary,
+.block-list summary {
+  cursor: pointer;
+  user-select: none;
+  color: var(--muted);
+  font-size: 11px;
+}
+.block-json pre {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--muted);
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 11px;
+}
+.entry-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.entry-pill {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--text);
+  font-size: 10.5px;
+  font-family: 'SF Mono', ui-monospace, monospace;
+}
+.entry-metric {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(0, 1fr);
+  gap: 10px;
+  color: var(--muted);
+  font-family: 'SF Mono', ui-monospace, monospace;
+  font-size: 11.5px;
+}
+.entry-metric b {
+  color: var(--text);
+  font-weight: 500;
+  overflow-wrap: anywhere;
 }

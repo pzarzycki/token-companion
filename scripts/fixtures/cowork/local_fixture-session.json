@@ -1,0 +1,9 @@
+{
+  "sessionId": "local_fixture-session",
+  "cliSessionId": "cli_fixture-session",
+  "cwd": "/tmp/token-companion-cowork-fixture/outputs",
+  "createdAt": 1783374927000,
+  "lastActivityAt": 1783374941000,
+  "model": "claude-fable-5",
+  "title": "Cowork fixture"
+}

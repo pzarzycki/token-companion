@@ -39,6 +39,7 @@ function emptyCosted(): CostedTotals {
 
 /** Cost of a single record; null when the model has no pricing entry. */
 export function recordCost(record: UsageRecord, pricing: PricingTable): number | null {
+  if (record.actualCostUsd !== undefined) return record.actualCostUsd
   const entry = pricing.models[record.model]
   if (!entry) return null
   const m = pricing.cacheMultipliers

@@ -31,7 +31,13 @@ export interface UsageRecord {
   /** Reasoning/thinking output tokens (Codex reasoning_output_tokens). */
   reasoningTokens: number
   cwd?: string
+  /** Optional display title when the source has a session metadata file. */
+  sessionTitle?: string
   filePath: string
+  /** Exact source-reported USD cost, used before pricing-table estimates. */
+  actualCostUsd?: number
+  /** Transcript entry key when it differs from the billing dedupe key. */
+  conversationRequestId?: string
   /** Stable identity for dedup (Claude message.id / requestId; Codex session id). */
   dedupKey: string
 }
@@ -126,19 +132,25 @@ export type ContentBlock =
   | { type: 'thinking'; thinking: string }
   | { type: 'tool_use'; id: string; name: string; input: unknown }
   | { type: 'tool_result'; tool_use_id: string; content: string | ContentBlock[] }
+  | { type: 'json'; label: string; value: unknown; defaultOpen?: boolean }
+  | { type: 'list'; label: string; items: string[]; defaultOpen?: boolean }
+  | { type: 'metric'; label: string; value: string | number }
   | { type: 'unknown'; raw: unknown }
 
 /** A single turn in the conversation (user or assistant). */
 export interface ConversationEntry {
   uuid: string
   parentUuid: string | null
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'system' | 'result' | 'event'
   timestamp: string
   content: ContentBlock[]
   /** Only on assistant entries */
   model?: string
   /** Links this entry back to its UsageRecord.dedupKey */
   requestId?: string
+  subtype?: string
+  title?: string
+  raw?: unknown
 }
 
 /** Returned by the session:entries IPC channel. */

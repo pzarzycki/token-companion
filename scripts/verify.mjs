@@ -13,6 +13,7 @@ const home = homedir()
 const PATHS = {
   claudeProjects: join(home, '.claude', 'projects'),
   claude3pTitleGen: join(home, 'Library', 'Application Support', 'Claude-3p', 'title-gen'),
+  claudeCoworkSessions: join(home, 'Library', 'Application Support', 'Claude', 'local-agent-mode-sessions'),
   codexSessions: join(home, '.codex', 'sessions')
 }
 
@@ -86,6 +87,116 @@ async function parseClaude(file, source) {
     })
   }
   return records
+}
+
+async function parseCowork(file) {
+  const records = []
+  const sessionDir = file.split('/').slice(0, -1).join('/')
+  const localSessionId = sessionDir.split('/').at(-1)
+  let metadata = {}
+  try {
+    metadata = JSON.parse(await fs.readFile(`${sessionDir}.json`, 'utf8'))
+  } catch {
+    /* metadata is optional */
+  }
+  const sessionId = str(metadata.sessionId) ?? localSessionId
+  const assistantByLink = new Map()
+  let lastAssistantLink
+  for await (const obj of readJsonl(file)) {
+    if (obj.type === 'assistant') {
+      const message = obj.message
+      const usage = message?.usage
+      if (!usage) continue
+      const link = str(message.id) ?? str(obj.request_id) ?? str(obj.requestId) ?? str(obj.uuid)
+      if (!link) continue
+      lastAssistantLink = link
+      assistantByLink.set(link, {
+        link,
+        model: str(message.model) ?? str(metadata.model) ?? 'unknown',
+        timestamp: str(obj.timestamp) ?? new Date(0).toISOString(),
+        usage
+      })
+      continue
+    }
+    if (obj.type !== 'result') continue
+    const link = lastAssistantLink ?? str(obj.uuid) ?? `${sessionId}:${records.length}`
+    const timestamp = str(obj.timestamp) ?? new Date(0).toISOString()
+    const modelUsage = obj.modelUsage
+    if (modelUsage && typeof modelUsage === 'object' && Object.keys(modelUsage).length) {
+      const entries = Object.entries(modelUsage)
+      for (const [model, usage] of entries) {
+        const cc = usage.cache_creation
+        records.push({
+          source: 'claude',
+          subSource: 'claude-cowork',
+          provider: 'anthropic',
+          sessionId,
+          model,
+          timestamp,
+          inputTokens: num(usage.inputTokens),
+          outputTokens: num(usage.outputTokens),
+          cacheWriteTokens: num(usage.cacheCreationInputTokens),
+          cacheReadTokens: num(usage.cacheReadInputTokens),
+          cacheWrite5m: num(cc?.ephemeral_5m_input_tokens),
+          cacheWrite1h: num(cc?.ephemeral_1h_input_tokens),
+          reasoningTokens: 0,
+          cwd: str(metadata.cwd),
+          sessionTitle: str(metadata.title),
+          filePath: file,
+          actualCostUsd: typeof usage.costUSD === 'number' ? usage.costUSD : undefined,
+          conversationRequestId: link,
+          dedupKey: entries.length === 1 ? link : `${link}:${model}`
+        })
+      }
+      continue
+    }
+    const usage = obj.usage
+    if (!usage) continue
+    const cc = usage.cache_creation
+    records.push({
+      source: 'claude',
+      subSource: 'claude-cowork',
+      provider: 'anthropic',
+      sessionId,
+      model: str(metadata.model) ?? assistantByLink.get(link)?.model ?? 'unknown',
+      timestamp,
+      inputTokens: num(usage.input_tokens),
+      outputTokens: num(usage.output_tokens),
+      cacheWriteTokens: num(usage.cache_creation_input_tokens),
+      cacheReadTokens: num(usage.cache_read_input_tokens),
+      cacheWrite5m: num(cc?.ephemeral_5m_input_tokens),
+      cacheWrite1h: num(cc?.ephemeral_1h_input_tokens),
+      reasoningTokens: 0,
+      cwd: str(metadata.cwd),
+      filePath: file,
+      actualCostUsd: typeof obj.total_cost_usd === 'number' ? obj.total_cost_usd : undefined,
+      conversationRequestId: link,
+      dedupKey: link
+    })
+  }
+  if (records.length) return records
+  return [...assistantByLink.values()].map((r) => {
+    const cc = r.usage.cache_creation
+    return {
+      source: 'claude',
+      subSource: 'claude-cowork',
+      provider: 'anthropic',
+      sessionId,
+      model: r.model,
+      timestamp: r.timestamp,
+      inputTokens: num(r.usage.input_tokens),
+      outputTokens: num(r.usage.output_tokens),
+      cacheWriteTokens: num(r.usage.cache_creation_input_tokens),
+      cacheReadTokens: num(r.usage.cache_read_input_tokens),
+      cacheWrite5m: num(cc?.ephemeral_5m_input_tokens),
+      cacheWrite1h: num(cc?.ephemeral_1h_input_tokens),
+      reasoningTokens: 0,
+      cwd: str(metadata.cwd),
+      filePath: file,
+      conversationRequestId: r.link,
+      dedupKey: r.link
+    }
+  })
 }
 
 async function parseCodex(file) {
@@ -191,6 +302,31 @@ async function main() {
   }
 
   // ---- Codex ----
+  console.log('\n== Claude Cowork fixture ==')
+  const coworkFixture = join(here, 'fixtures', 'cowork', 'local_fixture-session', 'audit.jsonl')
+  const coworkFixtureRecords = await parseCowork(coworkFixture)
+  assert(coworkFixtureRecords.length === 1, 'fixture emits one result-backed Cowork record')
+  const coworkFixtureRecord = coworkFixtureRecords[0]
+  assert(coworkFixtureRecord.sessionId === 'local_fixture-session', 'fixture keeps local Cowork session id')
+  assert(coworkFixtureRecord.outputTokens === 829, 'fixture uses final result output tokens, not streamed assistant output')
+  assert(coworkFixtureRecord.actualCostUsd === 0.358861, 'fixture preserves exact Claude-reported cost')
+  assert(coworkFixtureRecord.conversationRequestId === 'msg_fixture', 'fixture links billing row to assistant turn')
+
+  console.log('\n== Claude Cowork local-agent-mode-sessions ==')
+  const coworkFiles = await walk(PATHS.claudeCoworkSessions, (n) => n === 'audit.jsonl')
+  console.log(`  audit files: ${coworkFiles.length}`)
+  let cowork = []
+  for (const f of coworkFiles) cowork.push(...(await parseCowork(f)))
+  console.log(`  usage records: ${cowork.length}`)
+  const knownCowork = cowork.find((r) => r.sessionId === 'local_0710171f-18a1-4cbb-a19d-11090d0c958a')
+  if (knownCowork) {
+    assert(knownCowork.model === 'claude-fable-5', 'known MCP tools summary session model is claude-fable-5')
+    assert(Math.abs((knownCowork.actualCostUsd ?? 0) - 0.358861) < 0.000001, 'known MCP tools summary session exact cost is $0.358861')
+  } else {
+    console.log('  (known MCP tools summary session not present on this machine)')
+  }
+
+  // ---- Codex ----
   console.log('\n== Codex (~/.codex/sessions) ==')
   const codexFiles = await walk(PATHS.codexSessions, (n) => n.endsWith('.jsonl'))
   console.log(`  rollout files: ${codexFiles.length}`)
@@ -248,7 +384,7 @@ async function main() {
 
   // ---- Grand totals ----
   console.log('\n== Grand totals (priced models only) ==')
-  const all = [...claudeDedup, ...codex]
+  const all = [...claudeDedup, ...cowork, ...codex]
   let totalCost = 0
   let inTok = 0,
     outTok = 0,
@@ -259,6 +395,10 @@ async function main() {
     outTok += r.outputTokens
     cacheR += r.cacheReadTokens
     cacheW += r.cacheWriteTokens
+    if (typeof r.actualCostUsd === 'number') {
+      totalCost += r.actualCostUsd
+      continue
+    }
     const e = pricing.models[r.model]
     if (!e) continue
     const m = pricing.cacheMultipliers

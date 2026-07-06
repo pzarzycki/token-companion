@@ -12,6 +12,8 @@ export function sourcePaths() {
     claudeProjects: join(home, '.claude', 'projects'),
     /** Claude 3p title-generation JSONL logs. */
     claude3pTitleGen: join(appSupport, 'Claude-3p', 'title-gen'),
+    /** Claude 1p Cowork local agent sessions with audit.jsonl usage traces. */
+    claudeCoworkSessions: join(appSupport, 'Claude', 'local-agent-mode-sessions'),
     /** Codex CLI rollout sessions, organized as YYYY/MM/DD. */
     codexSessions: join(home, '.codex', 'sessions'),
     /** Desktop LevelDB/IndexedDB stores (discovery only — no token data). */
@@ -66,15 +68,19 @@ function isPathInsideRoot(filePath: string, root: string): boolean {
 }
 
 export function isAllowedSessionFile(filePath: string, source: SourceId): boolean {
-  if (!isJsonl(filePath)) return false
-
   const paths = sourcePaths()
   const root =
     source === 'codex'
       ? paths.codexSessions
       : source === 'claude-3p'
         ? paths.claude3pTitleGen
-        : paths.claudeProjects
+        : isPathInsideRoot(filePath, paths.claudeCoworkSessions)
+          ? paths.claudeCoworkSessions
+          : paths.claudeProjects
 
-  return isPathInsideRoot(filePath, root)
+  if (root === paths.claudeCoworkSessions) {
+    return filePath.endsWith('/audit.jsonl') && isPathInsideRoot(filePath, root)
+  }
+
+  return isJsonl(filePath) && isPathInsideRoot(filePath, root)
 }

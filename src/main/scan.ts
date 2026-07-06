@@ -1,6 +1,7 @@
 import type { ScanResult, UsageRecord, DesktopGapEntry } from '@shared/types'
 import { sourcePaths, walkFiles, isJsonl } from './sources'
 import { parseClaudeFile } from './parsers/claudeJsonl'
+import { parseClaudeCoworkFile } from './parsers/claudeCowork'
 import { parseCodexFile } from './parsers/codexJsonl'
 import { probeDesktopStore } from './parsers/leveldbProbe'
 
@@ -25,14 +26,18 @@ async function mapLimit<T, R>(
 }
 
 function dedupe(records: UsageRecord[]): UsageRecord[] {
-  const seen = new Set<string>()
-  const out: UsageRecord[] = []
+  const byKey = new Map<string, UsageRecord>()
   for (const r of records) {
-    if (seen.has(r.dedupKey)) continue
-    seen.add(r.dedupKey)
-    out.push(r)
+    const existing = byKey.get(r.dedupKey)
+    if (!existing) {
+      byKey.set(r.dedupKey, r)
+      continue
+    }
+    if (existing.actualCostUsd === undefined && r.actualCostUsd !== undefined) {
+      byKey.set(r.dedupKey, r)
+    }
   }
-  return out
+  return [...byKey.values()]
 }
 
 export async function scanAll(): Promise<ScanResult> {
@@ -51,6 +56,18 @@ export async function scanAll(): Promise<ScanResult> {
     }
   })
   for (const r of claudeResults) allRecords.push(...r)
+
+  // --- Claude 1p Cowork local agent sessions ---
+  const coworkFiles = await walkFiles(paths.claudeCoworkSessions, (name) => name === 'audit.jsonl')
+  const coworkResults = await mapLimit(coworkFiles, CONCURRENCY, async (f) => {
+    try {
+      return await parseClaudeCoworkFile(f)
+    } catch (e) {
+      warnings.push(`Failed to parse ${f}: ${(e as Error).message}`)
+      return [] as UsageRecord[]
+    }
+  })
+  for (const r of coworkResults) allRecords.push(...r)
 
   // --- Claude 3p title-gen JSONL ---
   const titleGenFiles = await walkFiles(paths.claude3pTitleGen, isJsonl)

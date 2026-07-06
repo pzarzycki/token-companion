@@ -125,7 +125,7 @@ export function SessionList({ sessions, records, pricing }: Props): React.JSX.El
                       ) : (
                         <EntryView
                           entries={sessionEntries}
-                          targetRequestId={r.dedupKey}
+                          targetRequestId={r.conversationRequestId ?? r.dedupKey}
                           renderAll={r.source === 'codex'}
                         />
                       )}
