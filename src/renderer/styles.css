@@ -46,12 +46,11 @@ body {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.topbar-left {
+.topbar-right {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  min-width: 220px;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
 }
 .brand {
   font-weight: 600;
@@ -65,6 +64,8 @@ body {
 .tabs {
   display: flex;
   gap: 4px;
+  flex: 1;
+  justify-content: center;
 }
 .app-meta {
   display: flex;
@@ -112,7 +113,6 @@ body {
   box-shadow: inset 0 -2px 0 var(--accent);
 }
 .refresh {
-  margin-left: auto;
   background: var(--panel-2);
   border: 1px solid var(--border);
   color: var(--text);
@@ -133,9 +133,12 @@ body {
     order: 3;
     width: 100%;
     flex-wrap: wrap;
+    justify-content: flex-start;
   }
-  .refresh {
-    margin-left: 0;
+  .topbar-right {
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 }
 

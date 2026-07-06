@@ -29,52 +29,41 @@ Local, privacy-first desktop analytics for Claude and Codex usage records alread
 
 ## Install
 
-The recommended path is to build and install Token Companion locally from source with `npx`. This avoids paid developer signatures and makes the source used for the installed app visible on your machine.
+There are two normal install paths:
 
-Recommended one-liner:
+1. Download the latest release artifact for your platform.
+2. Build locally from source with `npx`.
 
-```bash
-npx token-companion
-```
+### Option 1: direct download
 
-Prerequisite: Node.js 24 LTS or newer. `npm` and `npx` are included with the standard Node.js install.
-Install Node.js from https://nodejs.org/en/download if `npx` is missing.
+Current release: `v0.1.4`
 
-Fallback script installers:
+- macOS ARM64 DMG: [Token.Companion-0.1.4-mac-arm64.dmg](https://github.com/pzarzycki/token-companion/releases/download/v0.1.4/Token.Companion-0.1.4-mac-arm64.dmg)
+- Windows x64 installer: [Token.Companion-0.1.4-win-x64.exe](https://github.com/pzarzycki/token-companion/releases/download/v0.1.4/Token.Companion-0.1.4-win-x64.exe)
+- Linux amd64 DEB: [Token.Companion-0.1.4-linux-amd64.deb](https://github.com/pzarzycki/token-companion/releases/download/v0.1.4/Token.Companion-0.1.4-linux-amd64.deb)
+- Linux x86_64 RPM: [Token.Companion-0.1.4-linux-x86_64.rpm](https://github.com/pzarzycki/token-companion/releases/download/v0.1.4/Token.Companion-0.1.4-linux-x86_64.rpm)
+- Checksums: [SHA256SUMS](https://github.com/pzarzycki/token-companion/releases/download/v0.1.4/SHA256SUMS)
 
-macOS and Linux:
+Warning:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/pzarzycki/token-companion/main/install.sh | sh
-```
+- macOS builds are unsigned and not notarized. Gatekeeper may block first launch. If it does, open the app from Finder with control-click -> `Open`, or allow it in System Settings.
+- Windows builds are unsigned unless the GitHub Actions runner is given `WINDOWS_SIGNING_CERT_BASE64` and `WINDOWS_SIGNING_CERT_PASSWORD` secrets. A self-signed certificate will sign the binary, but SmartScreen will still show `More info` -> `Run anyway` unless the certificate chains to a trusted publisher.
+- Linux packages are convenience artifacts, not signed distro packages. Verify `SHA256SUMS` before installing.
 
-Windows PowerShell:
+### Option 2: build locally with `npx`
 
-```powershell
-irm https://raw.githubusercontent.com/pzarzycki/token-companion/main/install.ps1 | iex
-```
-
-Inspect before running:
+Prerequisite: Node.js 24 LTS or newer. `npm` and `npx` are included with the standard Node.js install. Install Node.js from https://nodejs.org/en/download if `npx` is missing.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pzarzycki/token-companion/main/install.sh | less
+npx token-companion@latest
 ```
 
-```powershell
-irm https://raw.githubusercontent.com/pzarzycki/token-companion/main/install.ps1 | more
-```
-
-Build a specific tag:
+Useful flags:
 
 ```bash
-npx token-companion --version v0.1.3
+npx token-companion@latest --dry-run
+npx token-companion@latest --version v0.1.4
 ```
-
-```powershell
-npx token-companion --dry-run
-```
-
-Useful options:
 
 - `--dry-run`: print checks, build commands, and install target.
 - `--package-only`: build packages but do not copy or install the built app.
@@ -83,35 +72,8 @@ Useful options:
 What the npm package actually is:
 
 - `token-companion` on npm is a small bootstrapper package, not the Electron app bundle and not the full source tree.
-- `npx token-companion` downloads the matching GitHub source tag, runs the checked-in installer, builds the app locally, and then installs the built desktop app for the current OS.
+- `npx token-companion@latest` downloads the matching GitHub source tag, runs the checked-in installer, builds the app locally, and then installs the built desktop app for the current OS.
 - The npm package exists to give users a one-line entry point with normal npm tooling while keeping the app itself open-source and locally built.
-
-Why npmjs.com shows `npm i token-companion`:
-
-- That install box is npm's generic package-page UI for installable packages.
-- It is not the recommended command for this package.
-- For Token Companion, the intended command is `npx token-companion`.
-
-How updates work:
-
-- `npx token-companion` is an installer entry point, not an auto-updater for an already running desktop app.
-- Running `npx token-companion@latest` fetches and runs the latest published installer package.
-- Running `npx token-companion@<version>` fetches that exact installer version.
-- npm may reuse a cached package when you rerun the same unpinned command. If you need the newest published installer immediately, use `npx token-companion@latest`.
-- If the newer installer builds a newer app successfully, the normal platform install step replaces the prior local app install.
-
-### Optional release binaries
-
-GitHub Releases still provide unsigned binaries for convenience. They are useful when you want a quick download, but macOS Gatekeeper and Windows SmartScreen warnings are expected because the project does not use paid developer certificates.
-
-| Platform | Artifact | Notes |
-|---|---|---|
-| macOS | `.dmg` / `.zip` | Unsigned artifacts built by `electron-builder`. |
-| Windows | NSIS `.exe` installer | Per-user installer with Start Menu and uninstall entry; SmartScreen warning expected until signed. |
-| Linux | `.deb` / `.rpm` | Native distro packages built by `electron-builder`. |
-
-Release downloads: [GitHub Releases](https://github.com/pzarzycki/token-companion/releases/latest).
-Tagged releases include `SHA256SUMS` for the uploaded artifacts.
 
 Install details: [docs](https://pzarzycki.github.io/token-companion/install/).
 
@@ -205,7 +167,7 @@ Versioning rules:
 
 Steady-state release flow:
 
-1. Update both package versions to the same `X.Y.Z`.
+1. Update `package.json`, `package-lock.json`, `packages/npm-installer/package.json`, and `packages/npm-installer/package-lock.json` to the same `X.Y.Z`.
 2. Merge the release commit to `main`.
 3. Push `main`.
 4. Create and push tag `vX.Y.Z`.
@@ -225,7 +187,7 @@ Trusted Publishing setup:
 Why the installer downloads GitHub source:
 
 - The published npm package intentionally stays small and only contains the installer entry point.
-- The real application source is taken from the matching GitHub tag tarball such as `https://github.com/pzarzycki/token-companion/archive/refs/tags/v0.1.3.tar.gz`.
+- The real application source is taken from the matching GitHub tag tarball such as `https://github.com/pzarzycki/token-companion/archive/refs/tags/v0.1.4.tar.gz`.
 - This keeps the published npm artifact small, makes the release source explicit, and ensures the local build uses the same tagged source as the GitHub release.
 
 Recovery path:

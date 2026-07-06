@@ -26,8 +26,17 @@ const REPO_URL = 'https://github.com/pzarzycki/token-companion'
 const LATEST_RELEASE_URL = `${REPO_URL}/releases/latest`
 const LATEST_RELEASE_API_URL =
   'https://api.github.com/repos/pzarzycki/token-companion/releases/latest'
+const UPDATE_CHECK_DELAY_MS = 1500
+const UPDATE_CHECK_TIMEOUT_MS = 3000
 
-let appInfoPromise: Promise<AppInfo> | null = null
+let appInfoPromise: Promise<void> | null = null
+let appInfoState: AppInfo = {
+  version: app.getVersion(),
+  repoUrl: REPO_URL,
+  hasUpdate: false,
+  latestVersion: null,
+  latestUrl: LATEST_RELEASE_URL
+}
 
 function normalizeVersion(raw: string): number[] {
   const match = raw.trim().replace(/^v/i, '').match(/^\d+(?:\.\d+)*/)
@@ -48,22 +57,25 @@ function isVersionNewer(candidate: string, current: string): boolean {
   return false
 }
 
-async function loadAppInfo(): Promise<AppInfo> {
-  const version = app.getVersion()
-  const fallback: AppInfo = {
-    version,
-    repoUrl: REPO_URL,
-    hasUpdate: false,
-    latestVersion: null,
-    latestUrl: LATEST_RELEASE_URL
+function broadcastAppInfo(): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send(IPC.onAppInfoChanged, appInfoState)
+    }
   }
+}
 
+async function refreshAppInfo(): Promise<void> {
+  const version = appInfoState.version
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), UPDATE_CHECK_TIMEOUT_MS)
   try {
     const response = await fetch(LATEST_RELEASE_API_URL, {
       headers: {
         Accept: 'application/vnd.github+json',
         'User-Agent': `token-companion/${version}`
-      }
+      },
+      signal: controller.signal
     })
     if (!response.ok) {
       throw new Error(`GitHub update check failed: ${response.status} ${response.statusText}`)
@@ -78,17 +90,29 @@ async function loadAppInfo(): Promise<AppInfo> {
       throw new Error('GitHub update check failed: release tag_name missing')
     }
 
-    return {
+    appInfoState = {
       version,
       repoUrl: REPO_URL,
       hasUpdate: isVersionNewer(latestVersion, version),
       latestVersion,
       latestUrl
     }
+    broadcastAppInfo()
   } catch (error) {
     console.error('Update check failed', error)
-    return fallback
+  } finally {
+    clearTimeout(timeout)
   }
+}
+
+function scheduleStartupUpdateCheck(): void {
+  setTimeout(() => {
+    if (!appInfoPromise) {
+      appInfoPromise = refreshAppInfo().finally(() => {
+        appInfoPromise = null
+      })
+    }
+  }, UPDATE_CHECK_DELAY_MS)
 }
 
 function isAllowedExternalUrl(rawUrl: string): boolean {
@@ -145,10 +169,7 @@ function createWindow(): void {
 function registerIpc(): void {
   ipcMain.handle(IPC.scan, async () => scanAll())
   ipcMain.handle(IPC.getPricing, async () => loadPricing())
-  ipcMain.handle(IPC.getAppInfo, async () => {
-    if (!appInfoPromise) appInfoPromise = loadAppInfo()
-    return appInfoPromise
-  })
+  ipcMain.handle(IPC.getAppInfo, async () => appInfoState)
   ipcMain.handle(IPC.savePricing, async (_e, table: PricingTable) => {
     await savePricing(table)
     return table
@@ -175,10 +196,10 @@ function setDevDockIcon(): void {
 }
 
 app.whenReady().then(() => {
-  appInfoPromise = loadAppInfo()
   setDevDockIcon()
   registerIpc()
   createWindow()
+  scheduleStartupUpdateCheck()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

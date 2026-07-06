@@ -13,7 +13,8 @@ export const IPC = {
   savePricing: 'pricing:save',
   resetPricing: 'pricing:reset',
   getSessionEntries: 'session:entries',
-  getAppInfo: 'app:info'
+  getAppInfo: 'app:info',
+  onAppInfoChanged: 'app:info:changed'
 } as const
 
 /** Shape of the API exposed on window.api via contextBridge. */
@@ -24,4 +25,5 @@ export interface RendererApi {
   resetPricing(): Promise<PricingTable>
   getSessionEntries(filePath: string, sessionId: string, source: SourceId): Promise<SessionEntries>
   getAppInfo(): Promise<AppInfo>
+  onAppInfoChanged(listener: (info: AppInfo) => void): () => void
 }

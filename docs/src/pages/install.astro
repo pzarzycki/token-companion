@@ -1,21 +1,29 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { releasesUrl, repoUrl } from "../data/site";
+import { repoUrl } from "../data/site";
 
 const npxInstall = `npx token-companion@latest`;
-const releaseHref = `${releasesUrl}`;
+const releaseVersion = "0.1.4";
+const latestTag = `v${releaseVersion}`;
+const checksumUrl = `${repoUrl}/releases/download/${latestTag}/SHA256SUMS`;
 
 const platformInstalls = [
   {
     id: "macos",
     name: "macOS",
-    releaseLabel: "Latest macOS release",
-    releaseArtifact: "DMG or ZIP from the latest GitHub release",
-    releaseWarning:
-      "Unsigned macOS builds are not notarized. Gatekeeper will warn on first launch and may require opening the app from System Settings or Finder context menu.",
-    npxCommand: npxInstall,
+    releaseTitle: "Download the unsigned DMG",
+    releaseSummary: "Best for Apple Silicon Macs when you want the shortest path to install.",
+    primaryDownloadLabel: "Download macOS DMG",
+    primaryDownloadUrl: `${repoUrl}/releases/download/${latestTag}/Token.Companion-${releaseVersion}-mac-arm64.dmg`,
+    alternateDownloadLabel: "ZIP build",
+    alternateDownloadUrl: `${repoUrl}/releases/download/${latestTag}/Token.Companion-${releaseVersion}-mac-arm64.zip`,
+    warningTitle: "Unsigned macOS build",
+    warningBody:
+      "The app is not notarized. Gatekeeper will warn on first launch. If macOS blocks it, open Finder, control-click the app, choose Open, then confirm in the dialog or System Settings.",
+    npxTitle: "Build locally with npx",
+    npxSummary: "Best when you want the app built from public source on your own machine.",
     requirements: ["Node.js 24 LTS", "npm / npx", "Xcode Command Line Tools"],
-    npxNotes: [
+    notes: [
       "Builds on the Mac that will run the app.",
       "Installs Token Companion.app under ~/Applications by default.",
       "Use --install-dir <path> to choose another destination.",
@@ -24,13 +32,19 @@ const platformInstalls = [
   {
     id: "windows",
     name: "Windows",
-    releaseLabel: "Latest Windows release",
-    releaseArtifact: "NSIS .exe installer from the latest GitHub release",
-    releaseWarning:
-      "Unsigned Windows builds can trigger SmartScreen. You may need to choose More info and Run anyway before the installer starts.",
-    npxCommand: npxInstall,
+    releaseTitle: "Download the unsigned installer",
+    releaseSummary: "Best for the standard per-user Windows install with Start Menu and uninstall support.",
+    primaryDownloadLabel: "Download Windows installer",
+    primaryDownloadUrl: `${repoUrl}/releases/download/${latestTag}/Token.Companion-${releaseVersion}-win-x64.exe`,
+    alternateDownloadLabel: null,
+    alternateDownloadUrl: null,
+    warningTitle: "Unsigned Windows build",
+    warningBody:
+      "SmartScreen may block the installer. If that happens, choose More info, then Run anyway. This is expected because the binary is not signed with a Microsoft-trusted certificate.",
+    npxTitle: "Build locally with npx",
+    npxSummary: "Best when you want to avoid downloading a prebuilt executable and prefer a local build.",
     requirements: ["Node.js 24 LTS", "npm / npx"],
-    npxNotes: [
+    notes: [
       "Builds a local NSIS installer, then runs it.",
       "The install is per-user and adds a Start Menu entry plus uninstall support.",
       "Use --dry-run first if you want to inspect the exact build steps.",
@@ -39,62 +53,46 @@ const platformInstalls = [
   {
     id: "linux",
     name: "Linux",
-    releaseLabel: "Latest Linux release",
-    releaseArtifact: ".deb or .rpm package from the latest GitHub release",
-    releaseWarning:
-      "Linux packages are unsigned convenience artifacts. Install them only if the package type matches your distro and you are comfortable verifying the release contents yourself.",
-    npxCommand: npxInstall,
+    releaseTitle: "Download the unsigned package",
+    releaseSummary: "Best when you want a ready-made package instead of running the build locally.",
+    primaryDownloadLabel: "Download Linux DEB",
+    primaryDownloadUrl: `${repoUrl}/releases/download/${latestTag}/Token.Companion-${releaseVersion}-linux-amd64.deb`,
+    alternateDownloadLabel: "RPM build",
+    alternateDownloadUrl: `${repoUrl}/releases/download/${latestTag}/Token.Companion-${releaseVersion}-linux-x86_64.rpm`,
+    warningTitle: "Unsigned Linux packages",
+    warningBody:
+      "These packages are convenience artifacts, not signed distro packages. Verify the checksum before installing and use the package format that matches your distribution.",
+    npxTitle: "Build locally with npx",
+    npxSummary: "Best when you want the package produced on the current machine and installed with local tooling.",
     requirements: ["Node.js 24 LTS", "npm / npx", "build-essential", "Python 3", "fakeroot", "dpkg", "rpm"],
-    npxNotes: [
+    notes: [
       "Builds native .deb and .rpm packages on the current machine.",
       "Installs with apt, dnf, or rpm when the matching tools are available.",
       "Use --package-only if you only want the built package files.",
     ],
   },
 ] as const;
-
-const installFaq = [
-  {
-    question: "Why keep npx as an option if release binaries exist?",
-    answer:
-      "The npx path builds from public source on your own machine. The release download is faster, but it is still an unsigned convenience artifact.",
-  },
-  {
-    question: "What does the installer package actually do?",
-    answer:
-      "It fetches the matching GitHub source, runs the normal build steps locally, then launches the platform installer or package output from that local build.",
-  },
-  {
-    question: "Can I pin a specific version?",
-    answer:
-      "Yes. Run npx token-companion@latest --version <tag> when you want to build a specific tagged release instead of the default latest path.",
-  },
-] as const;
 ---
 
-<BaseLayout title="Install" description="Install Token Companion from the latest unsigned release or build it locally with npx on macOS, Windows, and Linux.">
+<BaseLayout title="Install" description="Install Token Companion from a direct platform download or build it locally with npx on macOS, Windows, and Linux.">
   <section class="hero install-hero">
     <div class="container hero-grid hero-grid-wide">
       <div class="hero-copy install-copy">
         <p class="eyebrow">Install Token Companion</p>
-        <h1>Pick your platform, then choose release or local build.</h1>
+        <h1>Pick your platform, then choose direct download or local build.</h1>
         <p class="hero-lead">
-          Token Companion keeps the install path explicit. You can download the latest unsigned release for your
-          platform or run <code>npx</code> and build the app locally from source.
+          Every platform has two paths. You can download the current release artifact directly, or you can run
+          <code>npx</code> and build from public source on your own machine.
         </p>
-        <div class="button-row">
-          <a class="button button-primary" href={releaseHref}>Open latest release</a>
-          <a class="button button-secondary" href="#install-options">Build with npx</a>
-        </div>
       </div>
 
       <aside class="note-panel install-summary">
-        <p class="eyebrow">Recommended flow</p>
-        <h3>One platform at a time.</h3>
+        <p class="eyebrow">Important</p>
+        <h3>Prebuilt downloads are unsigned.</h3>
         <ul class="detail-list">
-          <li>The page defaults to the current browser platform and can be switched manually.</li>
-          <li>Release downloads are convenient, but every platform build is unsigned.</li>
-          <li>The npx path keeps the build on your own machine and shows original errors if something breaks.</li>
+          <li>The direct download path is faster, but each artifact can trigger OS trust warnings.</li>
+          <li>The <code>npx</code> path keeps the build local and prints original build errors when something fails.</li>
+          <li>Checksums for {latestTag} are published with the release.</li>
         </ul>
       </aside>
     </div>
@@ -104,11 +102,8 @@ const installFaq = [
     <div class="container">
       <div class="section-heading section-heading-compact">
         <p class="eyebrow">Installation</p>
-        <h2>Two install paths for the selected platform.</h2>
-        <p>
-          Use the latest release when you want the quickest path. Use <code>npx</code> when you want the build to run
-          locally from public source.
-        </p>
+        <h2>Exactly two options for the selected platform.</h2>
+        <p>Select a platform. The page defaults to the current browser platform, and each tab shows one direct-download card plus one local-build card.</p>
       </div>
 
       <div class="platform-switcher" data-platform-switcher>
@@ -141,48 +136,58 @@ const installFaq = [
               <div class="install-choice-grid">
                 <article class="install-choice">
                   <p class="platform-label">Option 1</p>
-                  <h3>{platform.releaseLabel}</h3>
-                  <p>{platform.releaseArtifact}</p>
-                  <p class="install-warning">{platform.releaseWarning}</p>
-                  <div class="button-row">
-                    <a class="button button-primary" href={releaseHref}>Open latest release</a>
+                  <h3>{platform.releaseTitle}</h3>
+                  <p>{platform.releaseSummary}</p>
+                  <div class="button-row install-card-actions">
+                    <a class="button button-primary" href={platform.primaryDownloadUrl}>{platform.primaryDownloadLabel}</a>
+                    {platform.alternateDownloadUrl && platform.alternateDownloadLabel ? (
+                      <a class="button button-secondary" href={platform.alternateDownloadUrl}>{platform.alternateDownloadLabel}</a>
+                    ) : null}
+                  </div>
+                  <div class="install-warning-block">
+                    <p class="install-warning-title">{platform.warningTitle}</p>
+                    <p class="install-warning">{platform.warningBody}</p>
+                    <p class="install-warning-meta">
+                      Verify with <a href={checksumUrl}>SHA256SUMS</a>.
+                    </p>
                   </div>
                 </article>
 
                 <article class="install-choice">
                   <p class="platform-label">Option 2</p>
-                  <h3>Build locally with npx</h3>
-                  <pre class="code-block"><code>{platform.npxCommand}</code></pre>
-                  <ul class="detail-list">
-                    {platform.npxNotes.map((note) => (
-                      <li>{note}</li>
-                    ))}
-                  </ul>
-                </article>
-              </div>
+                  <h3>{platform.npxTitle}</h3>
+                  <p>{platform.npxSummary}</p>
+                  <pre class="code-block"><code>{platform.id === "windows" ? `npx token-companion@latest` : npxInstall}</code></pre>
 
-              <div class="install-detail-grid">
-                <article class="note-panel">
-                  <p class="eyebrow">Requirements</p>
-                  <h3>{platform.name}</h3>
-                  <ul class="detail-list">
-                    {platform.requirements.map((requirement) => (
-                      <li>{requirement}</li>
-                    ))}
-                  </ul>
-                </article>
+                  <div class="install-subsection">
+                    <p class="command-label">Requirements</p>
+                    <ul class="detail-list">
+                      {platform.requirements.map((requirement) => (
+                        <li>{requirement}</li>
+                      ))}
+                    </ul>
+                  </div>
 
-                <article class="note-panel">
-                  <p class="eyebrow">Useful flags</p>
-                  <h3>Inspect or pin the build</h3>
-                  <div class="command-stack install-command-stack">
-                    <div>
-                      <p class="command-label">Dry run</p>
-                      <pre class="code-block"><code>{`npx token-companion@latest --dry-run`}</code></pre>
-                    </div>
-                    <div>
-                      <p class="command-label">Build a tag</p>
-                      <pre class="code-block"><code>{`npx token-companion@latest --version v0.1.3`}</code></pre>
+                  <div class="install-subsection">
+                    <p class="command-label">What it does</p>
+                    <ul class="detail-list">
+                      {platform.notes.map((note) => (
+                        <li>{note}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div class="install-subsection">
+                    <p class="command-label">Useful flags</p>
+                    <div class="command-stack install-command-stack">
+                      <div>
+                        <p class="command-label">Dry run</p>
+                        <pre class="code-block"><code>{`npx token-companion@latest --dry-run`}</code></pre>
+                      </div>
+                      <div>
+                        <p class="command-label">Build a tag</p>
+                        <pre class="code-block"><code>{`npx token-companion@latest --version ${latestTag}`}</code></pre>
+                      </div>
                     </div>
                   </div>
                 </article>
@@ -194,36 +199,7 @@ const installFaq = [
     </div>
   </section>
 
-  <section id="first-launch" class="section">
-    <div class="container sources-layout">
-      <div>
-        <div class="section-heading section-heading-compact">
-          <p class="eyebrow">First launch</p>
-          <h2>The app should start scanning immediately.</h2>
-          <p>
-            The Dashboard is the first screen. Scanning is read-only and standard Claude and Codex locations are
-            detected without extra configuration.
-          </p>
-        </div>
-        <ul class="detail-list">
-          <li>Claude sessions are read from <code>~/.claude/projects</code>.</li>
-          <li>Codex sessions are read from <code>~/.codex/sessions</code>.</li>
-          <li>Desktop stores without token usage are shown as untracked conversations instead of estimated costs.</li>
-        </ul>
-      </div>
-
-      <aside class="note-panel">
-        <p class="eyebrow">No account</p>
-        <h3>Everything stays local.</h3>
-        <p>
-          Token Companion reads files already on your machine. It does not require an account, telemetry setup, or a
-          hosted service.
-        </p>
-      </aside>
-    </div>
-  </section>
-
-  <section id="manual-build" class="section section-alt">
+  <section id="manual-build" class="section">
     <div class="container">
       <div class="section-heading">
         <p class="eyebrow">Manual build</p>
@@ -242,25 +218,6 @@ npm ci`}</code></pre>
           <pre class="code-block"><code>{`npm run typecheck
 npm run dist`}</code></pre>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="install-faq" class="section">
-    <div class="container">
-      <div class="section-heading">
-        <p class="eyebrow">FAQ</p>
-        <h2>Installer behavior in plain terms.</h2>
-      </div>
-
-      <div class="detail-grid">
-        {installFaq.map((item) => (
-          <article class="note-panel">
-            <p class="eyebrow">Question</p>
-            <h3>{item.question}</h3>
-            <p>{item.answer}</p>
-          </article>
-        ))}
       </div>
     </div>
   </section>
@@ -292,7 +249,8 @@ npm run dist`}</code></pre>
         });
       };
 
-      const initialPlatform = tabs.some((tab) => tab.dataset.platformTab === detectPlatform()) ? detectPlatform() : "macos";
+      const detectedPlatform = detectPlatform();
+      const initialPlatform = tabs.some((tab) => tab.dataset.platformTab === detectedPlatform) ? detectedPlatform : "macos";
       activate(initialPlatform);
 
       tabs.forEach((tab) => {

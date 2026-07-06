@@ -73,8 +73,13 @@ export function App(): React.JSX.Element {
     }
 
     void loadAppInfo()
+    const unsubscribe = window.api.onAppInfoChanged((info) => {
+      if (!cancelled) setAppInfo(info)
+    })
+
     return () => {
       cancelled = true
+      unsubscribe()
     }
   }, [])
 
@@ -91,10 +96,21 @@ export function App(): React.JSX.Element {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="topbar-left">
-          <div className="brand">
-            <span className="brand-mark">◆</span> Token Companion
-          </div>
+        <div className="brand">
+          <span className="brand-mark">◆</span> Token Companion
+        </div>
+        <nav className="tabs">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              className={tab === t.id ? 'tab active' : 'tab'}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
+        <div className="topbar-right">
           <div className="app-meta">
             <a
               className="topbar-link"
@@ -127,21 +143,10 @@ export function App(): React.JSX.Element {
               </a>
             )}
           </div>
+          <button className="refresh" onClick={() => void loadAll()} disabled={loading}>
+            {loading ? 'Scanning…' : '↻ Rescan'}
+          </button>
         </div>
-        <nav className="tabs">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              className={tab === t.id ? 'tab active' : 'tab'}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
-        <button className="refresh" onClick={() => void loadAll()} disabled={loading}>
-          {loading ? 'Scanning…' : '↻ Rescan'}
-        </button>
       </header>
 
       {error && <div className="banner error">Error: {error}</div>}

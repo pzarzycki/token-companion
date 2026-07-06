@@ -368,8 +368,7 @@ th {
 }
 
 .detail-grid,
-.install-choice-grid,
-.install-detail-grid {
+.install-choice-grid {
   display: grid;
   gap: 1rem;
 }
@@ -549,14 +548,17 @@ tbody tr:first-child td {
 
 .platform-panels,
 .platform-panel,
-.install-choice,
-.install-detail-grid > * {
+.install-choice {
   min-width: 0;
 }
 
 .platform-panel {
   display: grid;
   gap: 1rem;
+}
+
+.platform-panel[hidden] {
+  display: none;
 }
 
 .install-choice-grid {
@@ -570,23 +572,44 @@ tbody tr:first-child td {
   background: #ffffff;
 }
 
+.install-card-actions {
+  margin-top: 1rem;
+}
+
 .install-choice h3,
 .install-choice .code-block,
 .install-choice .button-row {
   margin-top: 1rem;
 }
 
+.install-warning-block {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.install-warning-title {
+  margin: 0;
+  font-weight: 700;
+  color: var(--ink);
+}
+
 .install-warning {
-  margin-top: 0.85rem;
+  margin-top: 0.5rem;
   color: var(--muted);
 }
 
-.install-detail-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.install-warning-meta {
+  margin-top: 0.5rem;
+  color: var(--muted);
 }
 
 .install-command-stack {
   margin-top: 0;
+}
+
+.install-subsection {
+  margin-top: 1.25rem;
 }
 
 .jump-links {
@@ -671,7 +694,6 @@ tbody tr:first-child td {
   .platform-grid,
   .detail-grid,
   .install-choice-grid,
-  .install-detail-grid,
   .build-commands {
     grid-template-columns: 1fr;
   }

@@ -34,15 +34,15 @@ Platform behavior:
 
 Example source tarball:
 
-`https://github.com/pzarzycki/token-companion/archive/refs/tags/v0.1.3.tar.gz`
+`https://github.com/pzarzycki/token-companion/archive/refs/tags/v0.1.4.tar.gz`
 
 ## Useful commands
 
 ```bash
 npx token-companion --dry-run
 npx token-companion@latest
-npx token-companion@0.1.3
-npx token-companion --version v0.1.3
+npx token-companion@0.1.4
+npx token-companion --version v0.1.4
 ```
 
 ## Update behavior

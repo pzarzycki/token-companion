@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createWriteStream, existsSync, promises as fs } from 'node:fs'
+import { createWriteStream, existsSync, promises as fs, readFileSync } from 'node:fs'
 import { get } from 'node:https'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -8,7 +8,9 @@ import * as tar from 'tar'
 
 const repo = 'pzarzycki/token-companion'
 const args = process.argv.slice(2)
-const npmPackageVersion = process.env.npm_package_version ?? '0.1.3'
+const npmPackageVersion =
+  process.env.npm_package_version ??
+  JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
 const defaultRef = `v${npmPackageVersion}`
 const version = parseVersion(args)
 const localSourceOverride = process.env.TOKEN_COMPANION_SOURCE_DIR
