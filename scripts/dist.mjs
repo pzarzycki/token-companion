@@ -32,15 +32,18 @@ async function main() {
   run('npm', ['run', packageScriptName(platformArg)])
   const prepackaged = await findPrepackagedApp(forgePlatform, archArg)
   await fs.rm(join(root, 'out', 'dist'), { recursive: true, force: true })
+  const builderEnv = {
+    CSC_IDENTITY_AUTO_DISCOVERY: process.env.CSC_IDENTITY_AUTO_DISCOVERY ?? 'false',
+    APPLE_ID: process.env.APPLE_ID ?? '',
+    APPLE_APP_SPECIFIC_PASSWORD: process.env.APPLE_APP_SPECIFIC_PASSWORD ?? ''
+  }
+
+  if (!process.env.CSC_LINK) builderEnv.CSC_LINK = ''
+  if (!process.env.CSC_KEY_PASSWORD) builderEnv.CSC_KEY_PASSWORD = ''
+
   runBuilder(
     ['--publish', 'never', `--${platformArg}`, archFlag(archArg), '--config', 'electron-builder.yml', '--prepackaged', prepackaged],
-    {
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false',
-      APPLE_ID: '',
-      APPLE_APP_SPECIFIC_PASSWORD: '',
-      CSC_LINK: '',
-      CSC_KEY_PASSWORD: ''
-    }
+    builderEnv
   )
 }
 
