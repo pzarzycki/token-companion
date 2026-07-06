@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            package-script: package
+            installer-check: sh -n install.sh
+          - os: windows-latest
+            package-script: package:win
+            installer-check: powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Help
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Validate source installer
+        run: npm run install:dry-run
+
+      - name: Validate installer wrapper
+        run: ${{ matrix.installer-check }}
+
+      - name: Package app
+        run: npm run ${{ matrix.package-script }}

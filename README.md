@@ -9,7 +9,7 @@
 Local, privacy-first desktop analytics for Claude and Codex usage records already on disk.
 
 [![Release](https://img.shields.io/github/v/release/pzarzycki/token-companion?style=flat-square&logo=github)](https://github.com/pzarzycki/token-companion/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/pzarzycki/token-companion/build.yml?style=flat-square&logo=githubactions&logoColor=white)](https://github.com/pzarzycki/token-companion/actions)
+[![Build](https://img.shields.io/github/actions/workflow/status/pzarzycki/token-companion/ci.yml?style=flat-square&logo=githubactions&logoColor=white)](https://github.com/pzarzycki/token-companion/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-online-8b5cf6?style=flat-square&logo=readthedocs&logoColor=white)](https://pzarzycki.github.io/token-companion/)
 
