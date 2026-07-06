@@ -140,9 +140,22 @@ function assertSupportedPlatform() {
 }
 
 function assertNodeVersion() {
-  const major = Number.parseInt(process.versions.node.split('.')[0] ?? '0', 10)
-  if (!Number.isFinite(major) || major < 24) {
-    throw new Error(`Node.js 24 or newer is required. Current version: ${process.version}`)
+  const minimum = [22, 12, 0]
+  const current = process.versions.node.split('.').map((part) => Number.parseInt(part, 10))
+  let supported = true
+
+  for (let index = 0; index < minimum.length; index += 1) {
+    const part = minimum[index]
+    const value = current[index] ?? 0
+    if (value > part) break
+    if (value < part) {
+      supported = false
+      break
+    }
+  }
+
+  if (!supported) {
+    throw new Error(`Node.js 22.12.0 or newer is required. Current version: ${process.version}`)
   }
 }
 

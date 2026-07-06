@@ -7,6 +7,9 @@
   "main": ".webpack/main",
   "author": "Pawel Zet",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "electron-forge start",
     "package": "electron-forge package",
@@ -43,6 +46,7 @@
     "tar": "7.5.19",
     "tmp": "0.2.7",
     "uuid": "11.1.1",
+    "extract-zip": "npm:@electron-internal/extract-zip@1.0.4",
     "webpack-dev-server": "6.0.0"
   },
   "devDependencies": {
