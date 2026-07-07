@@ -299,11 +299,11 @@ function normalizeMacAppBundleMetadata(appPath) {
   if (result.error) throw result.error
   if (result.status !== 0) {
     throw new Error(`Failed to update CFBundleDisplayName for macOS app bundle: ${plistPath}`)
+  }
 }
 
 function launchServicesRegisterPath() {
   return '/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister'
-}
 }
 
 async function findWindowsInstaller() {

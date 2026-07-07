@@ -1,13 +1,32 @@
 import type { ContentBlock, ConversationEntry, SessionEntries } from '@shared/types'
-import { readJsonlObjects, str } from './jsonlReader'
+import { num, readJsonlObjects, str } from './jsonlReader'
+
+const LONG_TEXT_THRESHOLD = 1200
+
+function compactPreview(text: string): string {
+  return text.replace(/\s+/g, ' ').trim().slice(0, 240)
+}
+
+function textBlock(text: string, label = 'Text', defaultOpen = true): ContentBlock {
+  if (text.length <= LONG_TEXT_THRESHOLD) return { type: 'text', text }
+  return { type: 'long_text', label, text, preview: compactPreview(text), defaultOpen }
+}
+
+function jsonBlock(label: string, value: unknown, defaultOpen = false): ContentBlock {
+  return { type: 'json', label, value, defaultOpen }
+}
+
+function metricBlock(label: string, value: string | number): ContentBlock {
+  return { type: 'metric', label, value }
+}
 
 /**
  * Extract readable text from a Codex Responses-API content array. Codex uses
  * `input_text` (user/developer turns) and `output_text` (assistant turns),
  * unlike Claude's `text`. Each becomes a text ContentBlock.
  */
-function textBlocks(raw: unknown): ContentBlock[] {
-  if (typeof raw === 'string') return raw ? [{ type: 'text', text: raw }] : []
+function textBlocks(raw: unknown, longLabel = 'Text', defaultOpen = true): ContentBlock[] {
+  if (typeof raw === 'string') return raw ? [textBlock(raw, longLabel, defaultOpen)] : []
   if (!Array.isArray(raw)) return []
   const blocks: ContentBlock[] = []
   for (const part of raw) {
@@ -15,7 +34,9 @@ function textBlocks(raw: unknown): ContentBlock[] {
     const p = part as Record<string, unknown>
     const t = p.type
     if ((t === 'input_text' || t === 'output_text' || t === 'text') && typeof p.text === 'string') {
-      blocks.push({ type: 'text', text: p.text })
+      blocks.push(textBlock(p.text, longLabel, defaultOpen))
+    } else if (t === 'input_image') {
+      blocks.push(jsonBlock('Image input', p))
     }
   }
   return blocks
@@ -29,6 +50,68 @@ function parseToolInput(raw: unknown): unknown {
   } catch {
     return raw
   }
+}
+
+function summaryText(raw: unknown): string {
+  if (!Array.isArray(raw)) return ''
+  return raw
+    .map((s) => {
+      if (typeof s === 'string') return s
+      if (s && typeof s === 'object' && typeof (s as Record<string, unknown>).text === 'string') {
+        return (s as Record<string, unknown>).text as string
+      }
+      return ''
+    })
+    .filter(Boolean)
+    .join('\n\n')
+}
+
+function extractContentText(raw: unknown): string {
+  if (typeof raw === 'string') return raw
+  if (!Array.isArray(raw)) return ''
+  return raw
+    .map((part) => {
+      if (!part || typeof part !== 'object') return ''
+      const p = part as Record<string, unknown>
+      return typeof p.text === 'string' ? p.text : ''
+    })
+    .filter(Boolean)
+    .join('\n\n')
+}
+
+function codexEntry(params: {
+  role: ConversationEntry['role']
+  timestamp: string
+  content: ContentBlock[]
+  subtype: string
+  title?: string
+  raw?: unknown
+}): ConversationEntry {
+  return {
+    uuid: '',
+    parentUuid: null,
+    role: params.role,
+    timestamp: params.timestamp,
+    content: params.content,
+    subtype: params.subtype,
+    title: params.title,
+    raw: params.raw
+  }
+}
+
+function parseTokenUsage(info: Record<string, unknown> | undefined): ContentBlock[] {
+  const total = info?.total_token_usage as Record<string, unknown> | undefined
+  const last = info?.last_token_usage as Record<string, unknown> | undefined
+  const blocks: ContentBlock[] = []
+  if (total) {
+    blocks.push(metricBlock('Total tokens', num(total.total_tokens)))
+    blocks.push(metricBlock('Input', num(total.input_tokens)))
+    blocks.push(metricBlock('Cached input', num(total.cached_input_tokens)))
+    blocks.push(metricBlock('Output', num(total.output_tokens)))
+    blocks.push(metricBlock('Reasoning output', num(total.reasoning_output_tokens)))
+  }
+  if (last) blocks.push(jsonBlock('Last token usage', last))
+  return blocks
 }
 
 /**
@@ -51,41 +134,202 @@ export async function parseCodexSessionEntries(
   const entries: ConversationEntry[] = []
 
   for await (const obj of readJsonlObjects(filePath)) {
+    const timestamp = str(obj.timestamp) ?? ''
+
+    if (obj.type === 'session_meta') {
+      const payload = obj.payload as Record<string, unknown> | undefined
+      if (!payload || typeof payload !== 'object') continue
+      entries.push(
+        codexEntry({
+          role: 'system',
+          timestamp,
+          subtype: 'codex-session-meta',
+          title: 'Session metadata',
+          content: [
+            metricBlock('Originator', str(payload.originator) ?? 'unknown'),
+            metricBlock('CLI version', str(payload.cli_version) ?? 'unknown'),
+            metricBlock('CWD', str(payload.cwd) ?? 'unknown'),
+            jsonBlock('Base instructions', payload.base_instructions),
+            jsonBlock('Dynamic tools', payload.dynamic_tools),
+            jsonBlock('Raw event', obj)
+          ],
+          raw: obj
+        })
+      )
+      continue
+    }
+
+    if (obj.type === 'turn_context') {
+      const payload = obj.payload as Record<string, unknown> | undefined
+      if (!payload || typeof payload !== 'object') continue
+      entries.push(
+        codexEntry({
+          role: 'system',
+          timestamp,
+          subtype: 'codex-turn-context',
+          title: 'Turn context',
+          content: [
+            metricBlock('Model', str(payload.model) ?? 'unknown'),
+            metricBlock('CWD', str(payload.cwd) ?? 'unknown'),
+            metricBlock('Approval', str(payload.approval_policy) ?? 'unknown'),
+            jsonBlock('Sandbox', payload.sandbox_policy),
+            jsonBlock('Collaboration mode', payload.collaboration_mode),
+            jsonBlock('Raw event', obj)
+          ],
+          raw: obj
+        })
+      )
+      continue
+    }
+
+    if (obj.type === 'compacted') {
+      entries.push(
+        codexEntry({
+          role: 'event',
+          timestamp,
+          subtype: 'codex-compacted',
+          title: 'Context compacted',
+          content: [jsonBlock('Raw event', obj, true)],
+          raw: obj
+        })
+      )
+      continue
+    }
+
+    if (obj.type === 'event_msg') {
+      const payload = obj.payload as Record<string, unknown> | undefined
+      if (!payload || typeof payload !== 'object') continue
+      const ptype = str(payload.type) ?? 'event'
+      if (ptype === 'user_message') {
+        const message = str(payload.message) ?? ''
+        const content = message ? [textBlock(message, 'User message', true)] : []
+        if (payload.images || payload.local_images || payload.text_elements) {
+          content.push(jsonBlock('Attachments', {
+            images: payload.images,
+            local_images: payload.local_images,
+            text_elements: payload.text_elements
+          }))
+        }
+        if (content.length) {
+          entries.push({
+            uuid: '',
+            parentUuid: null,
+            role: 'user',
+            timestamp,
+            content,
+            subtype: 'codex-user-message',
+            raw: obj
+          })
+        }
+      } else if (ptype === 'agent_message') {
+        const message = str(payload.message) ?? ''
+        if (message) {
+          entries.push(codexEntry({
+            role: 'event',
+            timestamp,
+            subtype: 'codex-agent-message',
+            title: 'Agent message',
+            content: [textBlock(message, 'Agent message', false), jsonBlock('Raw event', obj)],
+            raw: obj
+          }))
+        }
+      } else if (ptype === 'token_count') {
+        const info = payload.info as Record<string, unknown> | undefined
+        entries.push(
+          codexEntry({
+            role: 'event',
+            timestamp,
+            subtype: 'codex-token-count',
+            title: 'Token count',
+            content: [...parseTokenUsage(info), jsonBlock('Raw event', obj)],
+            raw: obj
+          })
+        )
+      } else {
+        const title = ptype
+          .split('_')
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ')
+        entries.push(
+          codexEntry({
+            role: ptype === 'task_started' || ptype === 'task_complete' ? 'system' : 'event',
+            timestamp,
+            subtype: `codex-${ptype}`,
+            title,
+            content: [jsonBlock('Raw event', obj, false)],
+            raw: obj
+          })
+        )
+      }
+      continue
+    }
+
     if (obj.type !== 'response_item') continue
     const payload = obj.payload as Record<string, unknown> | undefined
     if (!payload || typeof payload !== 'object') continue
 
-    const timestamp = str(obj.timestamp) ?? ''
     const ptype = payload.type
 
     if (ptype === 'message') {
-      const role = payload.role === 'assistant' ? 'assistant' : 'user'
-      const content = textBlocks(payload.content)
+      const role = str(payload.role) ?? 'user'
+      const contentText = extractContentText(payload.content)
+      if (role === 'developer') {
+        const content = textBlocks(payload.content, 'Developer context', false)
+        if (content.length === 0) continue
+        entries.push(
+          codexEntry({
+            role: 'system',
+            timestamp,
+            subtype: 'codex-developer-context',
+            title: 'Developer context',
+            content: [...content, jsonBlock('Raw event', obj)],
+            raw: obj
+          })
+        )
+        continue
+      }
+      if (role === 'user') {
+        const title =
+          contentText.includes('<environment_context>') || contentText.includes('# AGENTS.md instructions')
+            ? 'Environment context'
+            : 'Model input context'
+        const content = textBlocks(payload.content, title, false)
+        if (content.length === 0) continue
+        entries.push(
+          codexEntry({
+            role: 'system',
+            timestamp,
+            subtype: title === 'Environment context' ? 'codex-environment-context' : 'codex-model-input',
+            title,
+            content: [...content, jsonBlock('Raw event', obj)],
+            raw: obj
+          })
+        )
+        continue
+      }
+      const content = textBlocks(payload.content, 'Assistant message', true)
       if (content.length === 0) continue
-      entries.push({ uuid: '', parentUuid: null, role, timestamp, content })
+      entries.push({ uuid: '', parentUuid: null, role: 'assistant', timestamp, content, subtype: 'codex-assistant-message', raw: obj })
     } else if (ptype === 'reasoning') {
       // `summary` is a (usually empty) array of reasoning blurbs; the full
       // reasoning lives in `encrypted_content`, which we cannot decrypt.
-      const summary = Array.isArray(payload.summary) ? payload.summary : []
-      const text = summary
-        .map((s) => {
-          if (typeof s === 'string') return s
-          if (s && typeof s === 'object' && typeof (s as Record<string, unknown>).text === 'string') {
-            return (s as Record<string, unknown>).text as string
-          }
-          return ''
+      const text = summaryText(payload.summary)
+      entries.push(
+        codexEntry({
+          role: 'event',
+          timestamp,
+          subtype: 'codex-reasoning',
+          title: 'Reasoning metadata',
+          content: [
+            metricBlock('Summary items', Array.isArray(payload.summary) ? payload.summary.length : 0),
+            metricBlock('Encrypted content', str(payload.encrypted_content) ? 'present' : 'absent'),
+            ...(text ? [{ type: 'thinking' as const, thinking: text }] : []),
+            jsonBlock('Raw event', obj)
+          ],
+          raw: obj
         })
-        .filter(Boolean)
-        .join('\n\n')
-      entries.push({
-        uuid: '',
-        parentUuid: null,
-        role: 'assistant',
-        timestamp,
-        content: [{ type: 'thinking', thinking: text || '(reasoning not recorded — encrypted)' }]
-      })
+      )
     } else if (ptype === 'function_call' || ptype === 'custom_tool_call') {
-      // custom_tool_call carries `input`; function_call carries `arguments`.
       const input = ptype === 'custom_tool_call' ? payload.input : payload.arguments
       entries.push({
         uuid: '',
@@ -99,18 +343,33 @@ export async function parseCodexSessionEntries(
             name: str(payload.name) ?? 'tool',
             input: parseToolInput(input)
           }
-        ]
+        ],
+        subtype: 'codex-tool-call',
+        raw: obj
       })
     } else if (ptype === 'function_call_output' || ptype === 'custom_tool_call_output') {
       const out = payload.output
-      const content = typeof out === 'string' ? out : JSON.stringify(out)
+      const content = typeof out === 'string' ? out : JSON.stringify(out, null, 2)
       entries.push({
         uuid: '',
         parentUuid: null,
         role: 'user',
         timestamp,
-        content: [{ type: 'tool_result', tool_use_id: str(payload.call_id) ?? '', content }]
+        content: [{ type: 'tool_result', tool_use_id: str(payload.call_id) ?? '', content }],
+        subtype: 'codex-tool-result',
+        raw: obj
       })
+    } else {
+      entries.push(
+        codexEntry({
+          role: 'event',
+          timestamp,
+          subtype: `codex-${str(ptype) ?? 'response-item'}`,
+          title: str(ptype) ?? 'Response item',
+          content: [jsonBlock('Raw event', obj, false)],
+          raw: obj
+        })
+      )
     }
   }
 

@@ -273,6 +273,76 @@ function parseContent(raw) {
   })
 }
 
+function parseCodexContent(raw) {
+  if (typeof raw === 'string') return raw ? [{ type: 'text', text: raw }] : []
+  if (!Array.isArray(raw)) return []
+  const blocks = []
+  for (const part of raw) {
+    if (!part || typeof part !== 'object') continue
+    if ((part.type === 'input_text' || part.type === 'output_text' || part.type === 'text') && typeof part.text === 'string') {
+      blocks.push({ type: part.text.length > 1200 ? 'long_text' : 'text', text: part.text, label: 'Text' })
+    }
+  }
+  return blocks
+}
+
+function codexContentText(raw) {
+  return parseCodexContent(raw).map((b) => b.text).join('\n\n')
+}
+
+async function parseCodexEntries(file) {
+  const entries = []
+  for await (const obj of readJsonl(file)) {
+    const payload = obj.payload
+    const timestamp = str(obj.timestamp) ?? ''
+    if (obj.type === 'session_meta') {
+      entries.push({ role: 'system', subtype: 'codex-session-meta', title: 'Session metadata', timestamp, content: [], raw: obj })
+      continue
+    }
+    if (obj.type === 'turn_context') {
+      entries.push({ role: 'system', subtype: 'codex-turn-context', title: 'Turn context', timestamp, content: [], raw: obj })
+      continue
+    }
+    if (obj.type === 'compacted') {
+      entries.push({ role: 'event', subtype: 'codex-compacted', title: 'Context compacted', timestamp, content: [], raw: obj })
+      continue
+    }
+    if (obj.type === 'event_msg' && payload) {
+      if (payload.type === 'user_message' && typeof payload.message === 'string') {
+        entries.push({ role: 'user', subtype: 'codex-user-message', timestamp, content: [{ type: 'text', text: payload.message }], raw: obj })
+      } else if (payload.type === 'agent_message') {
+        entries.push({ role: 'event', subtype: 'codex-agent-message', title: 'Agent message', timestamp, content: [], raw: obj })
+      } else if (payload.type === 'token_count') {
+        entries.push({ role: 'event', subtype: 'codex-token-count', title: 'Token count', timestamp, content: [], raw: obj })
+      } else {
+        entries.push({ role: payload.type === 'task_started' || payload.type === 'task_complete' ? 'system' : 'event', subtype: `codex-${payload.type ?? 'event'}`, timestamp, content: [], raw: obj })
+      }
+      continue
+    }
+    if (obj.type !== 'response_item' || !payload) continue
+    if (payload.type === 'message') {
+      const text = codexContentText(payload.content)
+      if (payload.role === 'developer') {
+        entries.push({ role: 'system', subtype: 'codex-developer-context', title: 'Developer context', timestamp, content: parseCodexContent(payload.content), raw: obj })
+      } else if (payload.role === 'user') {
+        const title = text.includes('<environment_context>') || text.includes('# AGENTS.md instructions') ? 'Environment context' : 'Model input context'
+        entries.push({ role: 'system', subtype: title === 'Environment context' ? 'codex-environment-context' : 'codex-model-input', title, timestamp, content: parseCodexContent(payload.content), raw: obj })
+      } else if (payload.role === 'assistant') {
+        entries.push({ role: 'assistant', subtype: 'codex-assistant-message', timestamp, content: parseCodexContent(payload.content), raw: obj })
+      }
+    } else if (payload.type === 'reasoning') {
+      entries.push({ role: 'event', subtype: 'codex-reasoning', title: 'Reasoning metadata', timestamp, content: [], raw: obj })
+    } else if (payload.type === 'function_call' || payload.type === 'custom_tool_call') {
+      entries.push({ role: 'assistant', subtype: 'codex-tool-call', timestamp, content: [{ type: 'tool_use', name: str(payload.name) ?? 'tool', id: str(payload.call_id) ?? '' }], raw: obj })
+    } else if (payload.type === 'function_call_output' || payload.type === 'custom_tool_call_output') {
+      entries.push({ role: 'user', subtype: 'codex-tool-result', timestamp, content: [{ type: 'tool_result', tool_use_id: str(payload.call_id) ?? '', content: str(payload.output) ?? '' }], raw: obj })
+    } else {
+      entries.push({ role: 'event', subtype: `codex-${payload.type ?? 'response-item'}`, timestamp, content: [], raw: obj })
+    }
+  }
+  return entries
+}
+
 async function parseSessionEntries(file, sessionId) {
   const assistantByMsgId = new Map()
   const userByUuid = new Set()
@@ -429,6 +499,28 @@ async function main() {
     }
   }
   if (!checked) console.log('  (no session with ≥3 token_count events found to test)')
+
+  console.log('\n== Codex drill-down formatting fixture ==')
+  const knownCodexSession = '019f38ce-6f93-7502-93d0-0a752ab87263'
+  const knownCodexFile = codexFiles.find((f) => f.includes(knownCodexSession))
+  if (knownCodexFile) {
+    const entries = await parseCodexEntries(knownCodexFile)
+    const readable = entries.filter((e) =>
+      ['codex-user-message', 'codex-assistant-message', 'codex-tool-call', 'codex-tool-result'].includes(e.subtype)
+    )
+    assert(entries.some((e) => e.subtype === 'codex-developer-context' && e.role === 'system'), 'Codex developer context is system metadata')
+    assert(!entries.some((e) => e.role === 'user' && e.content.some((b) => b.text?.startsWith('<permissions instructions>'))), 'Codex developer context is not emitted as User')
+    assert(entries.some((e) => e.subtype === 'codex-user-message' && e.role === 'user'), 'Codex event_msg.user_message is the visible user turn')
+    assert(readable[0]?.subtype === 'codex-user-message', 'Codex readable timeline starts with real user message')
+    assert(entries.some((e) => e.subtype === 'codex-assistant-message' && e.role === 'assistant'), 'Codex assistant messages are preserved')
+    assert(entries.some((e) => e.subtype === 'codex-tool-call' && e.content.some((b) => b.type === 'tool_use' && b.name === 'exec_command')), 'Codex exec_command tool calls are preserved')
+    assert(entries.some((e) => e.subtype === 'codex-tool-result' && e.content.some((b) => b.type === 'tool_result')), 'Codex tool results are preserved')
+    assert(entries.some((e) => e.subtype === 'codex-reasoning' && e.role === 'event'), 'Codex encrypted reasoning is represented as metadata event')
+    assert(!entries.some((e) => e.role === 'assistant' && e.content.some((b) => b.type === 'thinking' && String(b.thinking).includes('encrypted'))), 'Codex encrypted reasoning is not shown as fake assistant thinking')
+    assert(entries.some((e) => e.subtype === 'codex-token-count' && e.role === 'event'), 'Codex token-count events remain available in full trace')
+  } else {
+    console.log('  (known Codex session not present on this machine)')
+  }
 
   console.log('\n== Claude 3p Desktop drill-down fixture ==')
   const known3pSession = 'b6de28c9-3d11-49fd-a965-3bce48fa3196'

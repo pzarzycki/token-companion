@@ -17,6 +17,29 @@ export function EntryView({ entries, targetRequestId, renderAll }: Props): React
   if (renderAll) {
     if (entries.length === 0)
       return <div className="entry-loading">No conversation content found.</div>
+    const isCodexTrace = entries.some((entry) => entry.subtype?.startsWith('codex-'))
+    if (isCodexTrace) {
+      const readableEntries = entries.filter(isReadableCodexEntry)
+      return (
+        <div className="entry-pair entry-with-audit">
+          <div className="entry-focus">
+            {readableEntries.length ? (
+              readableEntries.map((entry, i) => <EntryTurn key={i} entry={entry} />)
+            ) : (
+              <div className="entry-loading">No readable conversation content found.</div>
+            )}
+          </div>
+          <details className="audit-trace">
+            <summary>Full Codex trace ({entries.length} events)</summary>
+            <div className="audit-events">
+              {entries.map((entry, i) => (
+                <EntryTurn key={i} entry={entry} />
+              ))}
+            </div>
+          </details>
+        </div>
+      )
+    }
     return (
       <div className="entry-pair">
         {entries.map((entry, i) => (
@@ -62,6 +85,15 @@ export function EntryView({ entries, targetRequestId, renderAll }: Props): React
   )
 }
 
+function isReadableCodexEntry(entry: ConversationEntry): boolean {
+  return (
+    entry.subtype === 'codex-user-message' ||
+    entry.subtype === 'codex-assistant-message' ||
+    entry.subtype === 'codex-tool-call' ||
+    entry.subtype === 'codex-tool-result'
+  )
+}
+
 function EntryTurn({ entry }: { entry: ConversationEntry }): React.JSX.Element {
   const label =
     entry.role === 'user'
@@ -92,6 +124,18 @@ function BlockView({ block }: { block: ContentBlock }): React.JSX.Element {
     return <pre className="entry-block block-text">{block.text}</pre>
   }
 
+  if (block.type === 'long_text') {
+    return (
+      <details className="entry-block block-long-text" open={block.defaultOpen}>
+        <summary>
+          <span>{block.label}</span>
+          {block.preview && <span className="long-text-preview">{block.preview}</span>}
+        </summary>
+        <pre>{block.text}</pre>
+      </details>
+    )
+  }
+
   if (block.type === 'thinking') {
     const thinking = block.thinking.trim()
     return (
@@ -115,8 +159,9 @@ function BlockView({ block }: { block: ContentBlock }): React.JSX.Element {
 
   if (block.type === 'tool_result') {
     const content = block.content
+    const open = typeof content !== 'string' || content.length <= 1200
     return (
-      <details className="entry-block block-tool-result" open>
+      <details className="entry-block block-tool-result" open={open}>
         <summary>
           <span className="tool-result-label">Result</span>
           <span className="tool-result-id">{block.tool_use_id.slice(-8)}</span>
