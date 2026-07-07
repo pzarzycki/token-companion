@@ -174,7 +174,7 @@ export async function parseClaudeTranscriptEntries(
       entries.push(parseGenericEventEntry(obj))
       continue
     }
-    const objSessionId = str(obj.sessionId)
+    const objSessionId = str(obj.sessionId) ?? str(obj.session_id)
     if (objSessionId && objSessionId !== sessionId) continue
 
     const message = obj.message as Record<string, unknown> | undefined

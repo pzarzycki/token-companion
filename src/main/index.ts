@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { IPC } from '@shared/ipc'
 import type { AppInfo, PricingTable, SourceId } from '@shared/types'
@@ -184,7 +184,7 @@ function registerIpc(): void {
       }
 
       if (source === 'codex') return parseCodexSessionEntries(filePath, sessionId)
-      if (source === 'claude' && filePath.endsWith('/audit.jsonl')) {
+      if (source === 'claude' && basename(filePath) === 'audit.jsonl') {
         return parseClaudeCoworkSessionEntries(filePath, sessionId)
       }
       return parseSessionEntries(filePath, sessionId)

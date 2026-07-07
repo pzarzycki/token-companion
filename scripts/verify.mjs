@@ -35,7 +35,7 @@ function isAllowedSessionFile(filePath, source) {
     )
   }
   if (isPathInsideRoot(filePath, PATHS.claudeCoworkSessions)) {
-    return filePath.endsWith('/audit.jsonl')
+    return basename(filePath) === 'audit.jsonl'
   }
   return filePath.endsWith('.jsonl') && isPathInsideRoot(filePath, PATHS.claudeProjects)
 }
@@ -440,7 +440,7 @@ async function parseSessionEntries(file, sessionId) {
   const entries = []
   for await (const obj of readJsonl(file)) {
     if (obj.type !== 'user' && obj.type !== 'assistant') continue
-    const objSessionId = str(obj.sessionId)
+    const objSessionId = str(obj.sessionId) ?? str(obj.session_id)
     if (objSessionId && objSessionId !== sessionId) continue
     const message = obj.message
     if (!message || typeof message !== 'object') continue
@@ -495,7 +495,7 @@ async function findSubagentFiles(sessionDir) {
 }
 
 async function parseCoworkSubagents(auditFile, sessionId) {
-  const sessionDir = auditFile.split('/').slice(0, -1).join('/')
+  const sessionDir = dirname(auditFile)
   let metadata = {}
   try {
     metadata = JSON.parse(await fs.readFile(`${sessionDir}.json`, 'utf8'))

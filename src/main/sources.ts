@@ -1,5 +1,5 @@
 import { homedir } from 'node:os'
-import { isAbsolute, join, relative, resolve } from 'node:path'
+import { basename, isAbsolute, join, relative, resolve } from 'node:path'
 import { promises as fs } from 'node:fs'
 import type { SourceId } from '@shared/types'
 
@@ -82,7 +82,7 @@ export function isAllowedSessionFile(filePath: string, source: SourceId): boolea
   }
 
   if (isPathInsideRoot(filePath, paths.claudeCoworkSessions)) {
-    return filePath.endsWith('/audit.jsonl')
+    return basename(filePath) === 'audit.jsonl'
   }
 
   return isJsonl(filePath) && isPathInsideRoot(filePath, paths.claudeProjects)
