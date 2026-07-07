@@ -7,6 +7,7 @@ import { scanAll } from './scan'
 import { loadPricing, savePricing, resetPricing } from './pricing'
 import { parseSessionEntries } from './parsers/sessionEntries'
 import { parseCodexSessionEntries } from './parsers/codexSessionEntries'
+import { parseClaudeCoworkSessionEntries } from './parsers/claudeCoworkSubagents'
 import { isAllowedSessionFile } from './sources'
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
@@ -182,9 +183,11 @@ function registerIpc(): void {
         throw new Error(`Refusing to read non-session file: ${filePath}`)
       }
 
-      return source === 'codex'
-        ? parseCodexSessionEntries(filePath, sessionId)
-        : parseSessionEntries(filePath, sessionId)
+      if (source === 'codex') return parseCodexSessionEntries(filePath, sessionId)
+      if (source === 'claude' && filePath.endsWith('/audit.jsonl')) {
+        return parseClaudeCoworkSessionEntries(filePath, sessionId)
+      }
+      return parseSessionEntries(filePath, sessionId)
     }
   )
 }

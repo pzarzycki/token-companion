@@ -51,6 +51,8 @@ RELEASES
 !.env.example
 !.env.sample
 .claude/
+!scripts/fixtures/cowork/**/.claude/
+!scripts/fixtures/cowork/**/.claude/**
 
 # OS and editor files
 .DS_Store

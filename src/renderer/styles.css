@@ -73,7 +73,9 @@ body {
 .block-tool-result pre,
 .block-json pre,
 .block-list pre,
-.entry-list {
+.entry-list,
+.subagent-table-wrap,
+.subagent-detail {
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
@@ -959,6 +961,109 @@ tr.entry-row {
 }
 .audit-events {
   border-top: 1px solid var(--border);
+}
+.subagent-trace {
+  border-top: 1px solid var(--border);
+  background: #121722;
+}
+.subagent-trace > summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 12px;
+  padding: 10px 16px;
+  user-select: none;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.subagent-note {
+  color: var(--muted);
+  font-size: 11px;
+}
+.subagent-table-wrap {
+  max-height: 360px;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+}
+.subagent-table {
+  width: 100%;
+  min-width: 1060px;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+.subagent-table th,
+.subagent-table td {
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.subagent-table th {
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.subagent-table th.num,
+.subagent-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.subagent-table tr.clickable {
+  cursor: pointer;
+}
+.subagent-table tr.clickable:hover,
+.subagent-table tr.row-expanded {
+  background: var(--panel-2);
+}
+.subagent-table code {
+  display: block;
+  color: var(--text);
+  font-family: 'SF Mono', ui-monospace, monospace;
+  font-size: 11px;
+}
+.subagent-time {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+.subagent-description {
+  max-width: 360px;
+}
+.subagent-description span,
+.subagent-description small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.subagent-description small {
+  margin-top: 3px;
+  color: var(--muted);
+}
+.subagent-models {
+  max-width: 220px;
+  overflow-wrap: anywhere;
+}
+.subagent-detail {
+  max-height: 520px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+}
+.subagent-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  background: #151923;
+}
+.subagent-detail-head code {
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 .block-json,
 .block-list {

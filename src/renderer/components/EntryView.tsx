@@ -1,5 +1,5 @@
-import type React from 'react'
-import type { ConversationEntry, ContentBlock } from '@shared/types'
+import React, { useState } from 'react'
+import type { ConversationEntry, ContentBlock, CoworkSubagentTrace } from '@shared/types'
 
 interface Props {
   entries: ConversationEntry[]
@@ -11,9 +11,10 @@ interface Props {
    * there is no per-message requestId to match against.
    */
   renderAll?: boolean
+  subagents?: CoworkSubagentTrace[]
 }
 
-export function EntryView({ entries, targetRequestId, renderAll }: Props): React.JSX.Element | null {
+export function EntryView({ entries, targetRequestId, renderAll, subagents }: Props): React.JSX.Element | null {
   if (renderAll) {
     if (entries.length === 0)
       return <div className="entry-loading">No conversation content found.</div>
@@ -73,6 +74,7 @@ export function EntryView({ entries, targetRequestId, renderAll }: Props): React
         {user && <EntryTurn entry={user} />}
         <EntryTurn entry={assistant} />
       </div>
+      {subagents && subagents.length > 0 && <SubagentTrace subagents={subagents} />}
       <details className="audit-trace">
         <summary>Full audit trace ({entries.length} events)</summary>
         <div className="audit-events">
@@ -82,6 +84,89 @@ export function EntryView({ entries, targetRequestId, renderAll }: Props): React
         </div>
       </details>
     </div>
+  )
+}
+
+function fmtCount(n: number): string {
+  if (!Number.isFinite(n) || n === 0) return '0'
+  if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 1 : 2)}M`
+  if (Math.abs(n) >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 1 : 2)}K`
+  return String(n)
+}
+
+function fmtTime(timestamp: string): string {
+  if (!timestamp) return '—'
+  return new Date(timestamp).toLocaleTimeString()
+}
+
+function SubagentTrace({ subagents }: { subagents: CoworkSubagentTrace[] }): React.JSX.Element {
+  const [expandedAgent, setExpandedAgent] = useState<string | null>(null)
+  const active = expandedAgent ? subagents.find((s) => s.agentId === expandedAgent) : undefined
+
+  return (
+    <details className="subagent-trace">
+      <summary>
+        <span>Subagents ({subagents.length})</span>
+        <span className="subagent-note">display-only, included in parent Cowork cost</span>
+      </summary>
+      <div className="subagent-table-wrap">
+        <table className="subagent-table">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Description</th>
+              <th>Models</th>
+              <th className="num">Steps</th>
+              <th className="num">Input</th>
+              <th className="num">Cache R</th>
+              <th className="num">Cache W</th>
+              <th className="num">Output</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {subagents.map((agent) => (
+              <tr
+                key={agent.agentId}
+                className={`clickable${expandedAgent === agent.agentId ? ' row-expanded' : ''}`}
+                onClick={() => setExpandedAgent(expandedAgent === agent.agentId ? null : agent.agentId)}
+              >
+                <td>
+                  <code title={agent.agentId}>{agent.agentId.slice(0, 10)}</code>
+                  <span className="subagent-time">{fmtTime(agent.firstTimestamp)}</span>
+                </td>
+                <td className="subagent-description">
+                  <span>{agent.description ?? agent.promptPreview ?? agent.agentId}</span>
+                  {agent.promptPreview && agent.description && (
+                    <small title={agent.promptPreview}>{agent.promptPreview}</small>
+                  )}
+                </td>
+                <td className="subagent-models">{agent.models.join(', ') || '—'}</td>
+                <td className="num">{agent.stepCount || agent.progressCount || '—'}</td>
+                <td className="num">{fmtCount(agent.inputTokens)}</td>
+                <td className="num">{fmtCount(agent.cacheReadTokens)}</td>
+                <td className="num">{fmtCount(agent.cacheWriteTokens)}</td>
+                <td className="num">{fmtCount(agent.outputTokens)}</td>
+                <td>{agent.status ?? agent.subagentType ?? '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {active && (
+        <div className="subagent-detail">
+          <div className="subagent-detail-head">
+            <span>{active.description ?? active.agentId}</span>
+            <code>{active.agentId}</code>
+          </div>
+          {active.entries.length ? (
+            active.entries.map((entry, i) => <EntryTurn key={i} entry={entry} />)
+          ) : (
+            <div className="entry-loading">No subagent transcript found for this task.</div>
+          )}
+        </div>
+      )}
+    </details>
   )
 }
 

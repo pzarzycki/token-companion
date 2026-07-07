@@ -146,6 +146,14 @@ export async function parseSessionEntries(
   filePath: string,
   sessionId: string
 ): Promise<SessionEntries> {
+  const entries = await parseClaudeTranscriptEntries(filePath, sessionId)
+  return { sessionId, entries }
+}
+
+export async function parseClaudeTranscriptEntries(
+  filePath: string,
+  sessionId: string
+): Promise<ConversationEntry[]> {
   // Claude writes multiple JSONL records per assistant turn (same message.id),
   // one per content type: thinking → text → tool_use. Merge them by message.id.
   const assistantByMsgId = new Map<string, ConversationEntry>()
@@ -213,5 +221,5 @@ export async function parseSessionEntries(
   }
 
   entries.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-  return { sessionId, entries }
+  return entries
 }

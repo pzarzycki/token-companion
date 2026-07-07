@@ -158,6 +158,28 @@ export interface ConversationEntry {
 export interface SessionEntries {
   sessionId: string
   entries: ConversationEntry[]
+  subagents?: CoworkSubagentTrace[]
+}
+
+export interface CoworkSubagentTrace {
+  agentId: string
+  taskId: string
+  toolUseId?: string
+  description?: string
+  subagentType?: string
+  taskType?: string
+  promptPreview?: string
+  firstTimestamp: string
+  lastTimestamp: string
+  status?: string
+  progressCount: number
+  stepCount: number
+  models: string[]
+  inputTokens: number
+  outputTokens: number
+  cacheWriteTokens: number
+  cacheReadTokens: number
+  entries: ConversationEntry[]
 }
 
 export interface ScanResult {

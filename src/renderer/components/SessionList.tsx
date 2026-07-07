@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react'
-import type { SessionAggregate, UsageRecord, PricingTable, ConversationEntry } from '@shared/types'
+import type { SessionAggregate, UsageRecord, PricingTable, SessionEntries } from '@shared/types'
 import { recordCost } from '@shared/aggregate'
 import { fmtCost, fmtTokens, fmtDateTime, projectName } from '../format'
 import { EntryView } from './EntryView'
@@ -14,7 +14,7 @@ export function SessionList({ sessions, records, pricing }: Props): React.JSX.El
   const [selected, setSelected] = useState<string | null>(null)
   const [query, setQuery] = useState('')
 
-  const [sessionEntries, setSessionEntries] = useState<ConversationEntry[] | null>(null)
+  const [sessionEntries, setSessionEntries] = useState<SessionEntries | null>(null)
   const [entriesLoading, setEntriesLoading] = useState(false)
   const [expandedRecord, setExpandedRecord] = useState<string | null>(null)
 
@@ -60,9 +60,9 @@ export function SessionList({ sessions, records, pricing }: Props): React.JSX.El
             record.sessionId,
             record.source
           )
-          setSessionEntries(result.entries)
+          setSessionEntries(result)
         } catch {
-          setSessionEntries([])
+          setSessionEntries({ sessionId: record.sessionId, entries: [] })
         } finally {
           setEntriesLoading(false)
         }
@@ -126,9 +126,10 @@ export function SessionList({ sessions, records, pricing }: Props): React.JSX.El
                         <div className="entry-loading">Loading…</div>
                       ) : (
                         <EntryView
-                          entries={sessionEntries}
+                          entries={sessionEntries.entries}
                           targetRequestId={r.conversationRequestId ?? r.dedupKey}
                           renderAll={r.source === 'codex'}
+                          subagents={sessionEntries.subagents}
                         />
                       )}
                     </td>

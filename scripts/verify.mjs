@@ -380,6 +380,109 @@ async function parseSessionEntries(file, sessionId) {
   return entries
 }
 
+async function findSubagentFiles(sessionDir) {
+  const out = new Map()
+  const root = join(sessionDir, '.claude', 'projects')
+  async function rec(dir) {
+    let entries
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const e of entries) {
+      const full = join(dir, e.name)
+      if (e.isDirectory()) await rec(full)
+      else if (e.isFile()) {
+        const match = e.name.match(/^agent-(.+)\.jsonl$/)
+        if (match) out.set(match[1], full)
+      }
+    }
+  }
+  await rec(root)
+  return out
+}
+
+async function parseCoworkSubagents(auditFile, sessionId) {
+  const sessionDir = auditFile.split('/').slice(0, -1).join('/')
+  let metadata = {}
+  try {
+    metadata = JSON.parse(await fs.readFile(`${sessionDir}.json`, 'utf8'))
+  } catch {
+    /* metadata is optional */
+  }
+  const cliSessionId = str(metadata.cliSessionId) ?? sessionId
+  const tasks = new Map()
+  for await (const obj of readJsonl(auditFile)) {
+    const subtype = str(obj.subtype)
+    if (!subtype?.startsWith('task_')) continue
+    const taskId = str(obj.task_id)
+    if (!taskId) continue
+    const task =
+      tasks.get(taskId) ??
+      {
+        taskId,
+        firstTimestamp: '',
+        lastTimestamp: '',
+        progressCount: 0,
+        stepCount: 0
+      }
+    const ts = str(obj.timestamp) ?? str(obj._audit_timestamp)
+    if (ts) {
+      if (!task.firstTimestamp || ts < task.firstTimestamp) task.firstTimestamp = ts
+      if (!task.lastTimestamp || ts > task.lastTimestamp) task.lastTimestamp = ts
+    }
+    if (subtype === 'task_started') {
+      task.toolUseId = str(obj.tool_use_id) ?? task.toolUseId
+      task.description = str(obj.description) ?? task.description
+      task.subagentType = str(obj.subagent_type) ?? task.subagentType
+      task.taskType = str(obj.task_type) ?? task.taskType
+      task.promptPreview = str(obj.prompt)?.replace(/\s+/g, ' ').trim().slice(0, 220)
+    } else if (subtype === 'task_progress') {
+      task.progressCount += 1
+      task.stepCount = Math.max(task.stepCount, num(obj.usage?.tool_uses))
+    } else if (subtype === 'task_updated' || subtype === 'task_notification') {
+      task.status = str(obj.status) ?? str(obj.description) ?? task.status
+    }
+    tasks.set(taskId, task)
+  }
+
+  const files = await findSubagentFiles(sessionDir)
+  const subagents = []
+  for (const task of tasks.values()) {
+    const file = files.get(task.taskId)
+    const entries = file ? await parseSessionEntries(file, cliSessionId) : []
+    const models = new Set()
+    let inputTokens = 0,
+      outputTokens = 0,
+      cacheWriteTokens = 0,
+      cacheReadTokens = 0
+    if (file) {
+      for await (const obj of readJsonl(file)) {
+        const usage = obj.message?.usage
+        if (obj.type !== 'assistant' || !usage) continue
+        if (obj.message?.model) models.add(obj.message.model)
+        inputTokens += num(usage.input_tokens)
+        outputTokens += num(usage.output_tokens)
+        cacheWriteTokens += num(usage.cache_creation_input_tokens)
+        cacheReadTokens += num(usage.cache_read_input_tokens)
+      }
+    }
+    subagents.push({
+      ...task,
+      file,
+      entries,
+      models: [...models],
+      inputTokens,
+      outputTokens,
+      cacheWriteTokens,
+      cacheReadTokens
+    })
+  }
+  subagents.sort((a, b) => a.firstTimestamp.localeCompare(b.firstTimestamp))
+  return subagents
+}
+
 function assert(cond, msg) {
   if (!cond) {
     console.error('  ✗ FAIL:', msg)
@@ -451,6 +554,21 @@ async function main() {
   assert(coworkFixtureRecord.outputTokens === 829, 'fixture uses final result output tokens, not streamed assistant output')
   assert(coworkFixtureRecord.actualCostUsd === 0.358861, 'fixture preserves exact Claude-reported cost')
   assert(coworkFixtureRecord.conversationRequestId === 'msg_fixture', 'fixture links billing row to assistant turn')
+  const coworkFixtureSubagents = await parseCoworkSubagents(coworkFixture, 'local_fixture-session')
+  assert(coworkFixtureSubagents.length === 1, 'fixture discovers one Cowork subagent task')
+  const fixtureSubagent = coworkFixtureSubagents[0]
+  assert(fixtureSubagent.taskId === 'fixture-task', 'fixture subagent task id matches agent transcript file')
+  assert(fixtureSubagent.description === 'Fixture subagent', 'fixture subagent keeps task description')
+  assert(fixtureSubagent.stepCount === 1, 'fixture subagent step count comes from task progress')
+  assert(fixtureSubagent.models.includes('claude-sonnet-4-6'), 'fixture subagent model is parsed from transcript')
+  assert(fixtureSubagent.inputTokens === 16, 'fixture subagent display input tokens are summed from assistant usage')
+  assert(fixtureSubagent.cacheReadTokens === 26, 'fixture subagent display cache-read tokens are summed from assistant usage')
+  assert(fixtureSubagent.cacheWriteTokens === 22, 'fixture subagent display cache-write tokens are summed from assistant usage')
+  assert(fixtureSubagent.outputTokens === 34, 'fixture subagent display output tokens are summed from assistant usage')
+  assert(fixtureSubagent.entries.some((e) => e.role === 'user'), 'fixture subagent transcript includes a user prompt')
+  assert(fixtureSubagent.entries.some((e) => e.role === 'assistant' && e.content.some((b) => b.type === 'text')), 'fixture subagent transcript includes assistant text')
+  assert(fixtureSubagent.entries.some((e) => e.role === 'assistant' && e.content.some((b) => b.type === 'tool_use')), 'fixture subagent transcript includes tool use')
+  assert(fixtureSubagent.entries.some((e) => e.role === 'user' && e.content.some((b) => b.type === 'tool_result')), 'fixture subagent transcript includes tool result')
 
   console.log('\n== Claude Cowork local-agent-mode-sessions ==')
   const coworkFiles = await walk(PATHS.claudeCoworkSessions, (n) => n === 'audit.jsonl')
@@ -464,6 +582,20 @@ async function main() {
     assert(Math.abs((knownCowork.actualCostUsd ?? 0) - 0.358861) < 0.000001, 'known MCP tools summary session exact cost is $0.358861')
   } else {
     console.log('  (known MCP tools summary session not present on this machine)')
+  }
+  const knownSubagentSession = coworkFiles.find((f) => f.includes('local_d56999f0-0ebc-49dc-b647-a7fc40939f07/audit.jsonl'))
+  if (knownSubagentSession) {
+    const subagents = await parseCoworkSubagents(knownSubagentSession, 'local_d56999f0-0ebc-49dc-b647-a7fc40939f07')
+    assert(subagents.length === 543, 'known Cowork session discovers 543 matching subagent transcripts')
+    const american = subagents.find((s) => s.taskId === 'a297461973be14312')
+    assert(Boolean(american), 'known Cowork session includes agent-a297461973be14312')
+    if (american) {
+      assert(american.description === 'Renewal analysis: American Airlines', 'known Cowork subagent keeps American Airlines task description')
+      assert(Boolean(american.file?.endsWith('/subagents/agent-a297461973be14312.jsonl')), 'known Cowork subagent links to matching transcript file')
+      assert(american.entries.some((e) => e.role === 'assistant'), 'known Cowork subagent transcript has assistant entries')
+    }
+  } else {
+    console.log('  (known Cowork subagent-heavy session not present on this machine)')
   }
 
   // ---- Codex ----
