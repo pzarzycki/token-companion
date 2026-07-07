@@ -4,7 +4,7 @@
 // can validate numbers without the Electron/Vite toolchain.
 
 import { homedir } from 'node:os'
-import { join, basename, relative, resolve, isAbsolute } from 'node:path'
+import { join, basename, dirname, relative, resolve, isAbsolute } from 'node:path'
 import { promises as fs, createReadStream } from 'node:fs'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
@@ -111,11 +111,11 @@ async function parseClaude(file, source) {
 
 async function parseCowork(file) {
   const records = []
-  const sessionDir = file.split('/').slice(0, -1).join('/')
-  const localSessionId = sessionDir.split('/').at(-1)
+  const sessionDir = dirname(file)
+  const localSessionId = basename(sessionDir)
   let metadata = {}
   try {
-    metadata = JSON.parse(await fs.readFile(`${sessionDir}.json`, 'utf8'))
+    metadata = JSON.parse(await fs.readFile(join(dirname(sessionDir), `${basename(sessionDir)}.json`), 'utf8'))
   } catch {
     /* metadata is optional */
   }

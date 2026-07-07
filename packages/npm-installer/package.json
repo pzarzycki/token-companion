@@ -1,6 +1,6 @@
 {
   "name": "token-companion",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Source-build installer for the Token Companion desktop app",
   "bin": {
     "token-companion": "bin/token-companion.mjs"
