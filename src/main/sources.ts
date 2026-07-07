@@ -69,18 +69,21 @@ function isPathInsideRoot(filePath: string, root: string): boolean {
 
 export function isAllowedSessionFile(filePath: string, source: SourceId): boolean {
   const paths = sourcePaths()
-  const root =
-    source === 'codex'
-      ? paths.codexSessions
-      : source === 'claude-3p'
-        ? paths.claude3pTitleGen
-        : isPathInsideRoot(filePath, paths.claudeCoworkSessions)
-          ? paths.claudeCoworkSessions
-          : paths.claudeProjects
-
-  if (root === paths.claudeCoworkSessions) {
-    return filePath.endsWith('/audit.jsonl') && isPathInsideRoot(filePath, root)
+  if (source === 'codex') {
+    return isJsonl(filePath) && isPathInsideRoot(filePath, paths.codexSessions)
   }
 
-  return isJsonl(filePath) && isPathInsideRoot(filePath, root)
+  if (source === 'claude-3p') {
+    return (
+      isJsonl(filePath) &&
+      (isPathInsideRoot(filePath, paths.claude3pTitleGen) ||
+        isPathInsideRoot(filePath, paths.claudeProjects))
+    )
+  }
+
+  if (isPathInsideRoot(filePath, paths.claudeCoworkSessions)) {
+    return filePath.endsWith('/audit.jsonl')
+  }
+
+  return isJsonl(filePath) && isPathInsideRoot(filePath, paths.claudeProjects)
 }

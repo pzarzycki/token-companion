@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react'
 import type { SessionAggregate, UsageRecord, PricingTable, ConversationEntry } from '@shared/types'
 import { recordCost } from '@shared/aggregate'
-import { fmtCost, fmtTokens, fmtDateTime, shortSession, projectName } from '../format'
+import { fmtCost, fmtTokens, fmtDateTime, projectName } from '../format'
 import { EntryView } from './EntryView'
 
 interface Props {
@@ -78,7 +78,9 @@ export function SessionList({ sessions, records, pricing }: Props): React.JSX.El
         <button className="back" onClick={() => setSelected(null)}>
           ← All sessions
         </button>
-        <h2>Session {shortSession(selected)}</h2>
+        <h2 className="session-title">
+          <span>Session</span> <code>{selected}</code>
+        </h2>
         {sess && (
           <div className="session-meta">
             <span><b>Source:</b> {sess.source} / {sess.subSource}</span>

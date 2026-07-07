@@ -4,7 +4,7 @@
 // can validate numbers without the Electron/Vite toolchain.
 
 import { homedir } from 'node:os'
-import { join, basename } from 'node:path'
+import { join, basename, relative, resolve, isAbsolute } from 'node:path'
 import { promises as fs, createReadStream } from 'node:fs'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
@@ -19,6 +19,26 @@ const PATHS = {
 
 const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
 const str = (v) => (typeof v === 'string' ? v : undefined)
+
+function isPathInsideRoot(filePath, root) {
+  const rel = relative(resolve(root), resolve(filePath))
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+}
+
+function isAllowedSessionFile(filePath, source) {
+  if (source === 'codex') return filePath.endsWith('.jsonl') && isPathInsideRoot(filePath, PATHS.codexSessions)
+  if (source === 'claude-3p') {
+    return (
+      filePath.endsWith('.jsonl') &&
+      (isPathInsideRoot(filePath, PATHS.claude3pTitleGen) ||
+        isPathInsideRoot(filePath, PATHS.claudeProjects))
+    )
+  }
+  if (isPathInsideRoot(filePath, PATHS.claudeCoworkSessions)) {
+    return filePath.endsWith('/audit.jsonl')
+  }
+  return filePath.endsWith('.jsonl') && isPathInsideRoot(filePath, PATHS.claudeProjects)
+}
 
 async function walk(root, match) {
   const out = []
@@ -240,6 +260,56 @@ async function parseCodex(file) {
   ]
 }
 
+function parseContent(raw) {
+  if (typeof raw === 'string') return [{ type: 'text', text: raw }]
+  if (!Array.isArray(raw)) return []
+  return raw.map((b) => {
+    if (!b || typeof b !== 'object') return { type: 'unknown', raw: b }
+    if (b.type === 'text' && typeof b.text === 'string') return { type: 'text', text: b.text }
+    if (b.type === 'thinking' && typeof b.thinking === 'string') return { type: 'thinking', thinking: b.thinking }
+    if (b.type === 'tool_use') return { type: 'tool_use', id: str(b.id) ?? '', name: str(b.name) ?? '', input: b.input }
+    if (b.type === 'tool_result') return { type: 'tool_result', tool_use_id: str(b.tool_use_id) ?? '', content: b.content }
+    return { type: 'unknown', raw: b }
+  })
+}
+
+async function parseSessionEntries(file, sessionId) {
+  const assistantByMsgId = new Map()
+  const userByUuid = new Set()
+  const entries = []
+  for await (const obj of readJsonl(file)) {
+    if (obj.type !== 'user' && obj.type !== 'assistant') continue
+    const objSessionId = str(obj.sessionId)
+    if (objSessionId && objSessionId !== sessionId) continue
+    const message = obj.message
+    if (!message || typeof message !== 'object') continue
+    const content = parseContent(message.content)
+    if (obj.type === 'assistant') {
+      const linkKey = str(message.id) ?? str(obj.requestId) ?? str(obj.request_id)
+      if (linkKey && assistantByMsgId.has(linkKey)) {
+        assistantByMsgId.get(linkKey).content.push(...content)
+        continue
+      }
+      const entry = {
+        role: 'assistant',
+        requestId: linkKey,
+        model: str(message.model),
+        timestamp: str(obj.timestamp) ?? '',
+        content
+      }
+      if (linkKey) assistantByMsgId.set(linkKey, entry)
+      entries.push(entry)
+      continue
+    }
+    const uuid = str(obj.uuid) ?? ''
+    if (uuid && userByUuid.has(uuid)) continue
+    if (uuid) userByUuid.add(uuid)
+    entries.push({ role: 'user', timestamp: str(obj.timestamp) ?? '', content })
+  }
+  entries.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+  return entries
+}
+
 function assert(cond, msg) {
   if (!cond) {
     console.error('  ✗ FAIL:', msg)
@@ -359,6 +429,26 @@ async function main() {
     }
   }
   if (!checked) console.log('  (no session with ≥3 token_count events found to test)')
+
+  console.log('\n== Claude 3p Desktop drill-down fixture ==')
+  const known3pSession = 'b6de28c9-3d11-49fd-a965-3bce48fa3196'
+  const known3pFile = claudeFiles.find((f) => f.endsWith(`/${known3pSession}.jsonl`))
+  if (known3pFile) {
+    assert(isAllowedSessionFile(known3pFile, 'claude-3p'), 'claude-3p may read desktop transcript from ~/.claude/projects')
+    const entries = await parseSessionEntries(known3pFile, known3pSession)
+    assert(entries.some((e) => e.role === 'user'), 'known Claude 3p session has user entries')
+    assert(entries.some((e) => e.role === 'assistant'), 'known Claude 3p session has assistant entries')
+    const firstAssistant = entries.find((e) => e.role === 'assistant' && e.requestId === 'msg_bdrk_01LZ32CvjAsPcLq82g5nUcsN')
+    assert(Boolean(firstAssistant), 'known Claude 3p assistant turn resolves by message id')
+    if (firstAssistant) {
+      const blockTypes = new Set(firstAssistant.content.map((b) => b.type))
+      assert(blockTypes.has('thinking'), 'known Claude 3p assistant turn includes thinking block')
+      assert(blockTypes.has('text'), 'known Claude 3p assistant turn includes text block')
+      assert(blockTypes.has('tool_use'), 'known Claude 3p assistant turn includes tool-use block')
+    }
+  } else {
+    console.log('  (known Claude 3p desktop session not present on this machine)')
+  }
 
   // ---- Cost math sanity on one record ----
   console.log('\n== Cross-check: cost math on one Claude record ==')
