@@ -1,0 +1,8 @@
+{"type":"session_meta","timestamp":"2026-07-07T00:02:00.000Z","payload":{"id":"codex-child-b","session_id":"codex-parent-fixture","parent_thread_id":"codex-parent-fixture","cwd":"/tmp/token-companion","thread_source":"subagent","agent_nickname":"Beta","agent_role":"default","source":{"subagent":{"thread_spawn":{"parent_thread_id":"codex-parent-fixture","depth":1,"agent_path":null,"agent_nickname":"Beta","agent_role":"default"}}}}}
+{"type":"turn_context","timestamp":"2026-07-07T00:02:01.000Z","payload":{"model":"gpt-5.4-mini"}}
+{"type":"event_msg","timestamp":"2026-07-07T00:02:02.000Z","payload":{"type":"user_message","message":"Worker B prompt"}}
+{"type":"response_item","timestamp":"2026-07-07T00:02:03.000Z","payload":{"type":"function_call","name":"exec_command","call_id":"call_exec","arguments":"{\"cmd\":\"echo beta\"}"}}
+{"type":"response_item","timestamp":"2026-07-07T00:02:04.000Z","payload":{"type":"function_call_output","call_id":"call_exec","output":"beta"}}
+{"type":"response_item","timestamp":"2026-07-07T00:02:05.000Z","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Worker B result"}]}}
+{"type":"event_msg","timestamp":"2026-07-07T00:02:06.000Z","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":200,"cached_input_tokens":50,"output_tokens":8,"reasoning_output_tokens":3,"total_tokens":208}}}}
+{"type":"event_msg","timestamp":"2026-07-07T00:02:07.000Z","payload":{"type":"task_complete","last_agent_message":"Worker B result"}}

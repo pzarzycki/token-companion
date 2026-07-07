@@ -21,6 +21,11 @@ export async function parseCodexFile(filePath: string): Promise<UsageRecord[]> {
   let lastTimestamp: string | undefined
   let model: string | undefined
   let cwd: string | undefined
+  let parentSessionId: string | undefined
+  let isSubagent = false
+  let agentNickname: string | undefined
+  let agentRole: string | undefined
+  let subagentDepth: number | undefined
   let lastTotals: {
     input: number
     cached: number
@@ -42,6 +47,17 @@ export async function parseCodexFile(filePath: string): Promise<UsageRecord[]> {
       // Prefer the rollout id, else session_id/thread id.
       sessionId = str(payload.id) ?? str(payload.session_id) ?? sessionId
       cwd = str(payload.cwd) ?? cwd
+      const source = payload.source as Record<string, unknown> | undefined
+      const subagent = source?.subagent as Record<string, unknown> | undefined
+      const threadSpawn = subagent?.thread_spawn as Record<string, unknown> | undefined
+      if (payload.thread_source === 'subagent' && threadSpawn) {
+        parentSessionId = str(threadSpawn.parent_thread_id) ?? str(payload.parent_thread_id)
+        isSubagent = Boolean(parentSessionId)
+        agentNickname = str(payload.agent_nickname) ?? str(threadSpawn.agent_nickname)
+        agentRole = str(payload.agent_role) ?? str(threadSpawn.agent_role)
+        const depth = num(threadSpawn.depth)
+        subagentDepth = depth || undefined
+      }
     } else if (type === 'turn_context' && payload) {
       model = str(payload.model) ?? model
       cwd = str(payload.cwd) ?? cwd
@@ -73,7 +89,7 @@ export async function parseCodexFile(filePath: string): Promise<UsageRecord[]> {
   return [
     {
       source: 'codex',
-      subSource: 'codex-cli',
+      subSource: isSubagent ? 'codex-subagent' : 'codex-cli',
       provider: 'openai',
       sessionId: resolvedSession,
       model: model ?? 'unknown',
@@ -87,6 +103,11 @@ export async function parseCodexFile(filePath: string): Promise<UsageRecord[]> {
       reasoningTokens: lastTotals.reasoning,
       cwd,
       filePath,
+      parentSessionId,
+      isSubagent: isSubagent || undefined,
+      agentNickname,
+      agentRole,
+      subagentDepth,
       dedupKey: `codex:${resolvedSession}`
     }
   ]

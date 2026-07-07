@@ -1,0 +1,3 @@
+{"type":"session_meta","timestamp":"2026-07-07T00:03:00.000Z","payload":{"id":"codex-guardian-fixture","session_id":"codex-parent-fixture","parent_thread_id":"codex-parent-fixture","cwd":"/tmp/token-companion","thread_source":"subagent","source":{"subagent":{"other":"guardian"}}}}
+{"type":"turn_context","timestamp":"2026-07-07T00:03:01.000Z","payload":{"model":"codex-auto-review"}}
+{"type":"event_msg","timestamp":"2026-07-07T00:03:02.000Z","payload":{"type":"user_message","message":"Internal guardian prompt"}}

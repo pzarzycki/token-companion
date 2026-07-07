@@ -220,12 +220,23 @@ async function parseCowork(file) {
 }
 
 async function parseCodex(file) {
-  let sessionId, lastTs, model, last
+  let sessionId, lastTs, model, last, parentSessionId, agentNickname, agentRole, subagentDepth
+  let isSubagent = false
   for await (const obj of readJsonl(file)) {
     const ts = str(obj.timestamp)
     if (ts) lastTs = ts
     const p = obj.payload
-    if (obj.type === 'session_meta' && p) sessionId = str(p.id) ?? str(p.session_id) ?? sessionId
+    if (obj.type === 'session_meta' && p) {
+      sessionId = str(p.id) ?? str(p.session_id) ?? sessionId
+      const threadSpawn = p.source?.subagent?.thread_spawn
+      if (p.thread_source === 'subagent' && threadSpawn) {
+        parentSessionId = str(threadSpawn.parent_thread_id) ?? str(p.parent_thread_id)
+        isSubagent = Boolean(parentSessionId)
+        agentNickname = str(p.agent_nickname) ?? str(threadSpawn.agent_nickname)
+        agentRole = str(p.agent_role) ?? str(threadSpawn.agent_role)
+        subagentDepth = num(threadSpawn.depth) || undefined
+      }
+    }
     else if (obj.type === 'turn_context' && p) model = str(p.model) ?? model
     else if (obj.type === 'event_msg' && p && p.type === 'token_count') {
       const total = p.info?.total_token_usage
@@ -243,7 +254,7 @@ async function parseCodex(file) {
   return [
     {
       source: 'codex',
-      subSource: 'codex-cli',
+      subSource: isSubagent ? 'codex-subagent' : 'codex-cli',
       provider: 'openai',
       sessionId: s,
       model: model ?? 'unknown',
@@ -255,6 +266,11 @@ async function parseCodex(file) {
       cacheWrite5m: 0,
       cacheWrite1h: 0,
       reasoningTokens: last.reasoning,
+      parentSessionId,
+      isSubagent: isSubagent || undefined,
+      agentNickname,
+      agentRole,
+      subagentDepth,
       dedupKey: `codex:${s}`
     }
   ]
@@ -341,6 +357,81 @@ async function parseCodexEntries(file) {
     }
   }
   return entries
+}
+
+async function summarizeCodexSubagent(file) {
+  let candidate = null
+  const models = new Set()
+  for await (const obj of readJsonl(file)) {
+    const p = obj.payload
+    const timestamp = str(obj.timestamp)
+    if (obj.type === 'session_meta' && p) {
+      const threadSpawn = p.source?.subagent?.thread_spawn
+      const parentSessionId = str(threadSpawn?.parent_thread_id) ?? str(p.parent_thread_id)
+      const agentId = str(p.id)
+      if (p.thread_source !== 'subagent' || !threadSpawn || !parentSessionId || !agentId) return null
+      candidate = {
+        file,
+        agentId,
+        parentSessionId,
+        description: str(p.agent_nickname) ?? str(threadSpawn.agent_nickname),
+        subagentType: str(p.agent_role) ?? str(threadSpawn.agent_role),
+        firstTimestamp: timestamp ?? str(p.timestamp) ?? '',
+        lastTimestamp: timestamp ?? str(p.timestamp) ?? '',
+        progressCount: 0,
+        stepCount: 0,
+        models: [],
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        reasoningTokens: 0,
+        promptPreview: undefined,
+        status: undefined
+      }
+      continue
+    }
+    if (!candidate) continue
+    if (timestamp) {
+      if (!candidate.firstTimestamp || timestamp < candidate.firstTimestamp) candidate.firstTimestamp = timestamp
+      if (!candidate.lastTimestamp || timestamp > candidate.lastTimestamp) candidate.lastTimestamp = timestamp
+    }
+    if (obj.type === 'turn_context' && p) {
+      if (p.model) models.add(p.model)
+    } else if (obj.type === 'event_msg' && p) {
+      if (p.type === 'user_message') candidate.promptPreview ??= str(p.message)?.replace(/\s+/g, ' ').trim().slice(0, 220)
+      if (p.type === 'task_complete') candidate.status = 'completed'
+      if (p.type === 'token_count') {
+        candidate.progressCount += 1
+        const total = p.info?.total_token_usage
+        if (total) {
+          const input = num(total.input_tokens)
+          const cached = num(total.cached_input_tokens)
+          candidate.inputTokens = Math.max(0, input - cached)
+          candidate.cacheReadTokens = cached
+          candidate.outputTokens = num(total.output_tokens)
+          candidate.reasoningTokens = num(total.reasoning_output_tokens)
+        }
+      }
+    } else if (obj.type === 'response_item' && p) {
+      candidate.stepCount += 1
+    }
+  }
+  if (!candidate) return null
+  candidate.models = [...models]
+  candidate.entries = await parseCodexEntries(file)
+  return candidate
+}
+
+async function parseCodexSubagents(root, parentSessionId) {
+  const files = await walk(root, (n) => n.endsWith('.jsonl'))
+  const subagents = []
+  for (const file of files) {
+    const candidate = await summarizeCodexSubagent(file)
+    if (candidate?.parentSessionId === parentSessionId) subagents.push(candidate)
+  }
+  subagents.sort((a, b) => a.firstTimestamp.localeCompare(b.firstTimestamp))
+  return subagents
 }
 
 async function parseSessionEntries(file, sessionId) {
@@ -652,6 +743,48 @@ async function main() {
     assert(entries.some((e) => e.subtype === 'codex-token-count' && e.role === 'event'), 'Codex token-count events remain available in full trace')
   } else {
     console.log('  (known Codex session not present on this machine)')
+  }
+
+  console.log('\n== Codex subagent traceability fixture ==')
+  const codexFixtureRoot = join(here, 'fixtures', 'codex')
+  const codexFixtureSubagents = await parseCodexSubagents(codexFixtureRoot, 'codex-parent-fixture')
+  assert(codexFixtureSubagents.length === 2, 'fixture discovers two user-spawned Codex subagents')
+  assert(codexFixtureSubagents.every((s) => s.models.includes('gpt-5.4-mini')), 'fixture subagent models are parsed from turn_context')
+  assert(codexFixtureSubagents.some((s) => s.description === 'Alpha'), 'fixture keeps Alpha nickname')
+  assert(codexFixtureSubagents.some((s) => s.description === 'Beta'), 'fixture keeps Beta nickname')
+  assert(codexFixtureSubagents.every((s) => s.status === 'completed'), 'fixture subagent completion status is parsed')
+  assert(codexFixtureSubagents.some((s) => s.entries.some((e) => e.subtype === 'codex-tool-call')), 'fixture subagent tool calls are preserved')
+  assert(codexFixtureSubagents.some((s) => s.entries.some((e) => e.subtype === 'codex-tool-result')), 'fixture subagent tool results are preserved')
+  assert(!codexFixtureSubagents.some((s) => s.agentId === 'codex-guardian-fixture'), 'fixture guardian subagent is not attached to parent drill-down')
+  const fixtureParentRecords = await parseCodex(join(codexFixtureRoot, 'parent.jsonl'))
+  const fixtureChildRecords = [
+    ...(await parseCodex(join(codexFixtureRoot, 'child-a.jsonl'))),
+    ...(await parseCodex(join(codexFixtureRoot, 'child-b.jsonl')))
+  ]
+  assert(fixtureParentRecords[0]?.subSource === 'codex-cli', 'fixture parent remains codex-cli usage')
+  assert(fixtureChildRecords.every((r) => r.subSource === 'codex-subagent'), 'fixture children are codex-subagent usage records')
+  assert(fixtureChildRecords.every((r) => r.parentSessionId === 'codex-parent-fixture'), 'fixture child usage records link to parent session')
+
+  console.log('\n== Codex local subagent example ==')
+  const knownCodexSubagentParent = '019f3a8d-bdd2-7601-9890-89fabffbd070'
+  const knownCodexSubagents = await parseCodexSubagents(PATHS.codexSessions, knownCodexSubagentParent)
+  if (knownCodexSubagents.length) {
+    assert(knownCodexSubagents.length === 5, 'known Codex session discovers five user-spawned subagents')
+    for (const name of ['Erdos', 'Kant', 'Pasteur', 'Cicero', 'Bernoulli']) {
+      assert(knownCodexSubagents.some((s) => s.description === name), `known Codex subagent includes ${name}`)
+    }
+    assert(knownCodexSubagents.every((s) => s.models.includes('gpt-5.4-mini')), 'known Codex subagents use gpt-5.4-mini')
+    assert(knownCodexSubagents.every((s) => s.entries.length > 0), 'known Codex subagent transcripts are non-empty')
+    const relatedFiles = codexFiles.filter((f) => f.includes(knownCodexSubagentParent) || knownCodexSubagents.some((s) => f.includes(s.agentId)))
+    let relatedRecords = []
+    for (const file of relatedFiles) relatedRecords.push(...(await parseCodex(file)))
+    const parentRecords = relatedRecords.filter((r) => r.sessionId === knownCodexSubagentParent)
+    const childRecords = relatedRecords.filter((r) => r.parentSessionId === knownCodexSubagentParent)
+    assert(parentRecords.length === 1, 'known Codex parent remains one usage record')
+    assert(childRecords.length === 5, 'known Codex children remain five usage records')
+    assert(childRecords.every((r) => r.subSource === 'codex-subagent'), 'known Codex child usage records are marked codex-subagent')
+  } else {
+    console.log('  (known Codex subagent example not present on this machine)')
   }
 
   console.log('\n== Claude 3p Desktop drill-down fixture ==')

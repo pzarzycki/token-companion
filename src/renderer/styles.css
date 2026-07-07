@@ -323,9 +323,31 @@ body {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 14px;
+  gap: 16px;
 }
 .panel-head h2 {
   margin: 0;
+}
+.panel-count-note {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.toggle-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.toggle-row input {
+  accent-color: var(--accent);
 }
 
 /* Tables */
@@ -392,6 +414,16 @@ body {
   padding: 1px 6px;
   font-size: 11px;
   color: var(--muted);
+}
+.subagent-badge {
+  display: inline-block;
+  margin-left: 6px;
+  border: 1px solid rgba(125, 154, 255, 0.35);
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: var(--accent);
+  font-size: 10.5px;
+  white-space: nowrap;
 }
 .tag {
   display: inline-block;
@@ -673,6 +705,16 @@ body {
 }
 .session-meta b {
   color: var(--text);
+}
+.inline-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  font-family: 'SF Mono', ui-monospace, monospace;
+  overflow-wrap: anywhere;
 }
 .search {
   background: var(--panel-2);
@@ -987,7 +1029,7 @@ tr.entry-row {
 }
 .subagent-table {
   width: 100%;
-  min-width: 1060px;
+  min-width: 1120px;
   border-collapse: collapse;
   font-size: 11.5px;
 }
@@ -1021,6 +1063,11 @@ tr.entry-row {
   color: var(--text);
   font-family: 'SF Mono', ui-monospace, monospace;
   font-size: 11px;
+}
+.subagent-name {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--text);
 }
 .subagent-time {
   display: block;

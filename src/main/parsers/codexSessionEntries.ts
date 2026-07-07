@@ -1,5 +1,6 @@
-import type { ContentBlock, ConversationEntry, SessionEntries } from '@shared/types'
+import type { ContentBlock, ConversationEntry, SessionEntries, SubagentTrace } from '@shared/types'
 import { num, readJsonlObjects, str } from './jsonlReader'
+import { isJsonl, sourcePaths, walkFiles } from '../sources'
 
 const LONG_TEXT_THRESHOLD = 1200
 
@@ -114,6 +115,159 @@ function parseTokenUsage(info: Record<string, unknown> | undefined): ContentBloc
   return blocks
 }
 
+interface CodexSubagentCandidate {
+  filePath: string
+  agentId: string
+  parentSessionId: string
+  nickname?: string
+  role?: string
+  depth?: number
+  firstTimestamp: string
+  lastTimestamp: string
+  status?: string
+  progressCount: number
+  stepCount: number
+  models: string[]
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens: number
+  reasoningTokens: number
+  promptPreview?: string
+}
+
+function previewText(text: string | undefined): string | undefined {
+  if (!text) return undefined
+  const normalized = text.replace(/\s+/g, ' ').trim()
+  if (!normalized) return undefined
+  return normalized.length > 220 ? `${normalized.slice(0, 217)}...` : normalized
+}
+
+function updateRange(candidate: CodexSubagentCandidate, timestamp: string | undefined): void {
+  if (!timestamp) return
+  if (!candidate.firstTimestamp || timestamp < candidate.firstTimestamp) candidate.firstTimestamp = timestamp
+  if (!candidate.lastTimestamp || timestamp > candidate.lastTimestamp) candidate.lastTimestamp = timestamp
+}
+
+async function summarizeCodexSubagentFile(filePath: string): Promise<CodexSubagentCandidate | null> {
+  let candidate: CodexSubagentCandidate | null = null
+  const models = new Set<string>()
+
+  for await (const obj of readJsonlObjects(filePath)) {
+    const payload = obj.payload as Record<string, unknown> | undefined
+    const timestamp = str(obj.timestamp)
+
+    if (obj.type === 'session_meta' && payload) {
+      const source = payload.source as Record<string, unknown> | undefined
+      const subagent = source?.subagent as Record<string, unknown> | undefined
+      const threadSpawn = subagent?.thread_spawn as Record<string, unknown> | undefined
+      const parentSessionId = str(threadSpawn?.parent_thread_id) ?? str(payload.parent_thread_id)
+      const agentId = str(payload.id)
+      if (payload.thread_source !== 'subagent' || !threadSpawn || !parentSessionId || !agentId) {
+        return null
+      }
+      candidate = {
+        filePath,
+        agentId,
+        parentSessionId,
+        nickname: str(payload.agent_nickname) ?? str(threadSpawn.agent_nickname),
+        role: str(payload.agent_role) ?? str(threadSpawn.agent_role),
+        depth: num(threadSpawn.depth) || undefined,
+        firstTimestamp: timestamp ?? str(payload.timestamp) ?? '',
+        lastTimestamp: timestamp ?? str(payload.timestamp) ?? '',
+        progressCount: 0,
+        stepCount: 0,
+        models: [],
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        reasoningTokens: 0
+      }
+      continue
+    }
+
+    if (!candidate) continue
+    updateRange(candidate, timestamp)
+
+    if (obj.type === 'turn_context' && payload) {
+      const model = str(payload.model)
+      if (model) models.add(model)
+      continue
+    }
+
+    if (obj.type === 'event_msg' && payload) {
+      const eventType = str(payload.type)
+      if (eventType === 'user_message') {
+        candidate.promptPreview = candidate.promptPreview ?? previewText(str(payload.message))
+      } else if (eventType === 'token_count') {
+        candidate.progressCount += 1
+        const info = payload.info as Record<string, unknown> | undefined
+        const total = info?.total_token_usage as Record<string, unknown> | undefined
+        if (total) {
+          const input = num(total.input_tokens)
+          const cached = num(total.cached_input_tokens)
+          candidate.inputTokens = Math.max(0, input - cached)
+          candidate.cacheReadTokens = cached
+          candidate.outputTokens = num(total.output_tokens)
+          candidate.reasoningTokens = num(total.reasoning_output_tokens)
+        }
+      } else if (eventType === 'task_complete') {
+        candidate.status = 'completed'
+      }
+      continue
+    }
+
+    if (obj.type === 'response_item' && payload) {
+      candidate.stepCount += 1
+    }
+  }
+
+  if (!candidate) return null
+  candidate.models = [...models]
+  return candidate
+}
+
+async function parseCodexSubagents(parentSessionId: string): Promise<SubagentTrace[]> {
+  const files = await walkFiles(sourcePaths().codexSessions, isJsonl)
+  const candidates: CodexSubagentCandidate[] = []
+
+  for (const filePath of files) {
+    const candidate = await summarizeCodexSubagentFile(filePath)
+    if (candidate?.parentSessionId === parentSessionId) candidates.push(candidate)
+  }
+
+  const subagents: SubagentTrace[] = []
+  for (const candidate of candidates) {
+    const parsed = await parseCodexSessionEntries(candidate.filePath, candidate.agentId, {
+      includeSubagents: false
+    })
+    subagents.push({
+      source: 'codex',
+      agentId: candidate.agentId,
+      taskId: candidate.agentId,
+      parentSessionId: candidate.parentSessionId,
+      description: candidate.nickname,
+      subagentType: candidate.role,
+      taskType: 'thread_spawn',
+      promptPreview: candidate.promptPreview,
+      firstTimestamp: candidate.firstTimestamp,
+      lastTimestamp: candidate.lastTimestamp,
+      status: candidate.status,
+      progressCount: candidate.progressCount,
+      stepCount: candidate.stepCount,
+      models: candidate.models,
+      inputTokens: candidate.inputTokens,
+      outputTokens: candidate.outputTokens,
+      cacheWriteTokens: 0,
+      cacheReadTokens: candidate.cacheReadTokens,
+      reasoningTokens: candidate.reasoningTokens,
+      entries: parsed.entries
+    })
+  }
+
+  subagents.sort((a, b) => a.firstTimestamp.localeCompare(b.firstTimestamp))
+  return subagents
+}
+
 /**
  * Parse a Codex CLI rollout file into conversation entries. Codex stores the
  * conversation as `response_item` records in OpenAI Responses format — a
@@ -129,7 +283,8 @@ function parseTokenUsage(info: Record<string, unknown> | undefined): ContentBloc
  */
 export async function parseCodexSessionEntries(
   filePath: string,
-  sessionId: string
+  sessionId: string,
+  options: { includeSubagents?: boolean } = {}
 ): Promise<SessionEntries> {
   const entries: ConversationEntry[] = []
 
@@ -373,5 +528,6 @@ export async function parseCodexSessionEntries(
     }
   }
 
-  return { sessionId, entries }
+  const subagents = options.includeSubagents === false ? [] : await parseCodexSubagents(sessionId)
+  return { sessionId, entries, subagents }
 }

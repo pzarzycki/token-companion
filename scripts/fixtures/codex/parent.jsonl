@@ -1,0 +1,9 @@
+{"type":"session_meta","timestamp":"2026-07-07T00:00:00.000Z","payload":{"id":"codex-parent-fixture","session_id":"codex-parent-fixture","cwd":"/tmp/token-companion","source":"vscode","thread_source":"user"}}
+{"type":"turn_context","timestamp":"2026-07-07T00:00:01.000Z","payload":{"model":"gpt-5.4"}}
+{"type":"event_msg","timestamp":"2026-07-07T00:00:02.000Z","payload":{"type":"user_message","message":"Run two subagents."}}
+{"type":"response_item","timestamp":"2026-07-07T00:00:03.000Z","payload":{"type":"function_call","name":"spawn_agent","namespace":"multi_agent_v1","call_id":"call_spawn_a","arguments":"{\"message\":\"worker A\"}"}}
+{"type":"response_item","timestamp":"2026-07-07T00:00:04.000Z","payload":{"type":"function_call","name":"spawn_agent","namespace":"multi_agent_v1","call_id":"call_spawn_b","arguments":"{\"message\":\"worker B\"}"}}
+{"type":"response_item","timestamp":"2026-07-07T00:00:05.000Z","payload":{"type":"function_call","name":"wait_agent","namespace":"multi_agent_v1","call_id":"call_wait","arguments":"{\"targets\":[\"codex-child-a\",\"codex-child-b\"]}"}}
+{"type":"response_item","timestamp":"2026-07-07T00:00:06.000Z","payload":{"type":"function_call","name":"close_agent","namespace":"multi_agent_v1","call_id":"call_close","arguments":"{\"target\":\"codex-child-a\"}"}}
+{"type":"event_msg","timestamp":"2026-07-07T00:00:07.000Z","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1000,"cached_input_tokens":400,"output_tokens":100,"reasoning_output_tokens":10,"total_tokens":1100}}}}
+{"type":"event_msg","timestamp":"2026-07-07T00:00:08.000Z","payload":{"type":"task_complete","last_agent_message":"Done"}}

@@ -97,6 +97,7 @@ function makeRecord(params: {
   actualCostUsd?: number
   linkKey: string
   dedupKey: string
+  subagentCount?: number
 }): UsageRecord {
   return {
     source: 'claude',
@@ -112,6 +113,7 @@ function makeRecord(params: {
     filePath: params.filePath,
     actualCostUsd: params.actualCostUsd,
     conversationRequestId: params.linkKey,
+    subagentCount: params.subagentCount,
     dedupKey: params.dedupKey
   }
 }
@@ -129,8 +131,14 @@ export async function parseClaudeCoworkFile(filePath: string): Promise<UsageReco
   const assistantByLink = new Map<string, AssistantCandidate>()
   let lastAssistantLink: string | undefined
   const resultRecords: UsageRecord[] = []
+  const taskIds = new Set<string>()
 
   for await (const obj of readJsonlObjects(filePath)) {
+    if (str(obj.subtype) === 'task_started') {
+      const taskId = str(obj.task_id)
+      if (taskId) taskIds.add(taskId)
+    }
+
     if (obj.type === 'assistant') {
       const message = obj.message as Record<string, unknown> | undefined
       if (!message || typeof message !== 'object') continue
@@ -170,7 +178,8 @@ export async function parseClaudeCoworkFile(filePath: string): Promise<UsageReco
             tokens: modelUsageTokens(usage),
             actualCostUsd: actualCostUsd || undefined,
             linkKey,
-            dedupKey: Object.keys(modelUsage).length === 1 ? linkKey : `${linkKey}:${model}`
+            dedupKey: Object.keys(modelUsage).length === 1 ? linkKey : `${linkKey}:${model}`,
+            subagentCount: taskIds.size || undefined
           })
         )
       }
@@ -190,7 +199,8 @@ export async function parseClaudeCoworkFile(filePath: string): Promise<UsageReco
         tokens: usageTokens(usage),
         actualCostUsd: actualCostUsd || undefined,
         linkKey,
-        dedupKey: linkKey
+        dedupKey: linkKey,
+        subagentCount: taskIds.size || undefined
       })
     )
   }
@@ -206,7 +216,8 @@ export async function parseClaudeCoworkFile(filePath: string): Promise<UsageReco
       timestamp: candidate.timestamp,
       tokens: usageTokens(candidate.usage),
       linkKey: candidate.linkKey,
-      dedupKey: candidate.linkKey || `${localSessionId}:${i}`
+      dedupKey: candidate.linkKey || `${localSessionId}:${i}`,
+      subagentCount: taskIds.size || undefined
     })
   )
 }

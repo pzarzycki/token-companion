@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import type { ConversationEntry, ContentBlock, CoworkSubagentTrace } from '@shared/types'
+import type { ConversationEntry, ContentBlock, SubagentTrace } from '@shared/types'
 
 interface Props {
   entries: ConversationEntry[]
@@ -11,7 +11,7 @@ interface Props {
    * there is no per-message requestId to match against.
    */
   renderAll?: boolean
-  subagents?: CoworkSubagentTrace[]
+  subagents?: SubagentTrace[]
 }
 
 export function EntryView({ entries, targetRequestId, renderAll, subagents }: Props): React.JSX.Element | null {
@@ -30,6 +30,7 @@ export function EntryView({ entries, targetRequestId, renderAll, subagents }: Pr
               <div className="entry-loading">No readable conversation content found.</div>
             )}
           </div>
+          {subagents && subagents.length > 0 && <SubagentTrace subagents={subagents} />}
           <details className="audit-trace">
             <summary>Full Codex trace ({entries.length} events)</summary>
             <div className="audit-events">
@@ -99,15 +100,25 @@ function fmtTime(timestamp: string): string {
   return new Date(timestamp).toLocaleTimeString()
 }
 
-function SubagentTrace({ subagents }: { subagents: CoworkSubagentTrace[] }): React.JSX.Element {
+function SubagentTrace({ subagents }: { subagents: SubagentTrace[] }): React.JSX.Element {
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null)
   const active = expandedAgent ? subagents.find((s) => s.agentId === expandedAgent) : undefined
+  const hasCodex = subagents.some((s) => s.source === 'codex')
+  const hasCowork = subagents.some((s) => s.source === 'claude-cowork')
+  const note = hasCodex && hasCowork
+    ? 'mixed accounting by source'
+    : hasCodex
+      ? 'billable child sessions, linked to parent trace'
+      : 'display-only, included in parent Cowork cost'
+  const activeReadableEntries = active?.source === 'codex'
+    ? active.entries.filter(isReadableCodexEntry)
+    : (active?.entries ?? [])
 
   return (
     <details className="subagent-trace">
       <summary>
         <span>Subagents ({subagents.length})</span>
-        <span className="subagent-note">display-only, included in parent Cowork cost</span>
+        <span className="subagent-note">{note}</span>
       </summary>
       <div className="subagent-table-wrap">
         <table className="subagent-table">
@@ -121,6 +132,7 @@ function SubagentTrace({ subagents }: { subagents: CoworkSubagentTrace[] }): Rea
               <th className="num">Cache R</th>
               <th className="num">Cache W</th>
               <th className="num">Output</th>
+              <th className="num">Reasoning</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -132,14 +144,13 @@ function SubagentTrace({ subagents }: { subagents: CoworkSubagentTrace[] }): Rea
                 onClick={() => setExpandedAgent(expandedAgent === agent.agentId ? null : agent.agentId)}
               >
                 <td>
+                  {agent.description && <span className="subagent-name">{agent.description}</span>}
                   <code title={agent.agentId}>{agent.agentId.slice(0, 10)}</code>
                   <span className="subagent-time">{fmtTime(agent.firstTimestamp)}</span>
                 </td>
                 <td className="subagent-description">
-                  <span>{agent.description ?? agent.promptPreview ?? agent.agentId}</span>
-                  {agent.promptPreview && agent.description && (
-                    <small title={agent.promptPreview}>{agent.promptPreview}</small>
-                  )}
+                  <span>{agent.promptPreview ?? agent.taskType ?? agent.agentId}</span>
+                  {agent.parentSessionId && <small title={agent.parentSessionId}>parent {agent.parentSessionId}</small>}
                 </td>
                 <td className="subagent-models">{agent.models.join(', ') || '—'}</td>
                 <td className="num">{agent.stepCount || agent.progressCount || '—'}</td>
@@ -147,6 +158,7 @@ function SubagentTrace({ subagents }: { subagents: CoworkSubagentTrace[] }): Rea
                 <td className="num">{fmtCount(agent.cacheReadTokens)}</td>
                 <td className="num">{fmtCount(agent.cacheWriteTokens)}</td>
                 <td className="num">{fmtCount(agent.outputTokens)}</td>
+                <td className="num">{agent.reasoningTokens ? fmtCount(agent.reasoningTokens) : '—'}</td>
                 <td>{agent.status ?? agent.subagentType ?? '—'}</td>
               </tr>
             ))}
@@ -159,10 +171,20 @@ function SubagentTrace({ subagents }: { subagents: CoworkSubagentTrace[] }): Rea
             <span>{active.description ?? active.agentId}</span>
             <code>{active.agentId}</code>
           </div>
-          {active.entries.length ? (
-            active.entries.map((entry, i) => <EntryTurn key={i} entry={entry} />)
+          {activeReadableEntries.length ? (
+            activeReadableEntries.map((entry, i) => <EntryTurn key={i} entry={entry} />)
           ) : (
             <div className="entry-loading">No subagent transcript found for this task.</div>
+          )}
+          {active.source === 'codex' && active.entries.length > activeReadableEntries.length && (
+            <details className="audit-trace">
+              <summary>Full Codex subagent trace ({active.entries.length} events)</summary>
+              <div className="audit-events">
+                {active.entries.map((entry, i) => (
+                  <EntryTurn key={i} entry={entry} />
+                ))}
+              </div>
+            </details>
           )}
         </div>
       )}

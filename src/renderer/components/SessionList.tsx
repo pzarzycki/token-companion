@@ -17,17 +17,21 @@ export function SessionList({ sessions, records, pricing }: Props): React.JSX.El
   const [sessionEntries, setSessionEntries] = useState<SessionEntries | null>(null)
   const [entriesLoading, setEntriesLoading] = useState(false)
   const [expandedRecord, setExpandedRecord] = useState<string | null>(null)
+  const [showSubagentRows, setShowSubagentRows] = useState(false)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return sessions
-    return sessions.filter(
+    const visibleSessions = showSubagentRows ? sessions : sessions.filter((s) => !s.isSubagent)
+    if (!q) return visibleSessions
+    return visibleSessions.filter(
       (s) =>
         s.sessionId.toLowerCase().includes(q) ||
         (s.cwd ?? '').toLowerCase().includes(q) ||
+        (s.agentNickname ?? '').toLowerCase().includes(q) ||
+        (s.parentSessionId ?? '').toLowerCase().includes(q) ||
         s.models.some((m) => m.toLowerCase().includes(q))
     )
-  }, [sessions, query])
+  }, [sessions, query, showSubagentRows])
 
   const detailRecords = useMemo(() => {
     if (!selected) return []
@@ -88,6 +92,16 @@ export function SessionList({ sessions, records, pricing }: Props): React.JSX.El
             <span><b>Models:</b> {sess.models.join(', ')}</span>
             <span><b>Cost:</b> {fmtCost(sess.cost)}</span>
             <span><b>Records:</b> {sess.recordCount}</span>
+            {sess.subagentCount ? <span><b>Subagents:</b> {sess.subagentCount}</span> : null}
+            {sess.isSubagent && sess.parentSessionId && (
+              <span>
+                <b>Subagent of:</b>{' '}
+                <button className="inline-link" onClick={() => handleSelectSession(sess.parentSessionId!)}>
+                  {sess.parentSessionId}
+                </button>
+              </span>
+            )}
+            {sess.agentNickname && <span><b>Agent:</b> {sess.agentNickname}</span>}
           </div>
         )}
         <table className="data-table">
@@ -146,13 +160,28 @@ export function SessionList({ sessions, records, pricing }: Props): React.JSX.El
   return (
     <div className="panel">
       <div className="panel-head">
-        <h2>Sessions ({sessions.length})</h2>
-        <input
-          className="search"
-          placeholder="Search id / project / model…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <h2>
+          Sessions ({filtered.length})
+          {!showSubagentRows && sessions.some((s) => s.isSubagent) && (
+            <span className="panel-count-note">subagent rows hidden</span>
+          )}
+        </h2>
+        <div className="panel-controls">
+          <label className="toggle-row">
+            <input
+              type="checkbox"
+              checked={showSubagentRows}
+              onChange={(e) => setShowSubagentRows(e.target.checked)}
+            />
+            <span>Show subagent rows</span>
+          </label>
+          <input
+            className="search"
+            placeholder="Search id / project / model…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
       </div>
       <table className="data-table">
         <thead>
@@ -172,9 +201,16 @@ export function SessionList({ sessions, records, pricing }: Props): React.JSX.El
           {filtered.slice(0, 500).map((s) => (
             <tr key={s.sessionId} className="clickable" onClick={() => handleSelectSession(s.sessionId)}>
               <td>{fmtDateTime(s.lastTimestamp)}</td>
-              <td><span className="src-badge">{s.source}</span></td>
+              <td>
+                <span className="src-badge">{s.source}</span>
+                {s.isSubagent && <span className="subagent-badge">subagent</span>}
+                {s.subagentCount ? <span className="subagent-badge">{s.subagentCount} agents</span> : null}
+              </td>
               <td className="ellipsis" title={s.cwd}>{projectName(s.cwd)}</td>
-              <td className="ellipsis">{s.models.join(', ')}</td>
+              <td className="ellipsis">
+                {s.agentNickname ? `${s.agentNickname} · ` : ''}
+                {s.models.join(', ')}
+              </td>
               <td className="num">{fmtTokens(s.inputTokens)}</td>
               <td className="num">{fmtTokens(s.cacheReadTokens)}</td>
               <td className="num">{fmtTokens(s.outputTokens)}</td>

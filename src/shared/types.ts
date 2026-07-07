@@ -38,6 +38,16 @@ export interface UsageRecord {
   actualCostUsd?: number
   /** Transcript entry key when it differs from the billing dedupe key. */
   conversationRequestId?: string
+  /** Parent session/thread when this record is a user-spawned subagent. */
+  parentSessionId?: string
+  /** True when this record represents a child subagent session. */
+  isSubagent?: boolean
+  /** Display metadata for subagent sessions. */
+  agentNickname?: string
+  agentRole?: string
+  subagentDepth?: number
+  /** Display hint for parent rows that have nested subagent traces. */
+  subagentCount?: number
   /** Stable identity for dedup (Claude message.id / requestId; Codex session id). */
   dedupKey: string
 }
@@ -99,6 +109,12 @@ export interface SessionAggregate extends CostedTotals {
   provider: Provider
   models: string[]
   cwd?: string
+  parentSessionId?: string
+  isSubagent?: boolean
+  agentNickname?: string
+  agentRole?: string
+  subagentDepth?: number
+  subagentCount?: number
   firstTimestamp: string
   lastTimestamp: string
   recordCount: number
@@ -158,12 +174,14 @@ export interface ConversationEntry {
 export interface SessionEntries {
   sessionId: string
   entries: ConversationEntry[]
-  subagents?: CoworkSubagentTrace[]
+  subagents?: SubagentTrace[]
 }
 
-export interface CoworkSubagentTrace {
+export interface SubagentTrace {
+  source: 'claude-cowork' | 'codex'
   agentId: string
   taskId: string
+  parentSessionId?: string
   toolUseId?: string
   description?: string
   subagentType?: string
@@ -179,6 +197,7 @@ export interface CoworkSubagentTrace {
   outputTokens: number
   cacheWriteTokens: number
   cacheReadTokens: number
+  reasoningTokens: number
   entries: ConversationEntry[]
 }
 

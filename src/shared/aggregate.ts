@@ -159,6 +159,12 @@ export function aggregate(
         provider: record.provider,
         models: [],
         cwd: record.cwd,
+        parentSessionId: record.parentSessionId,
+        isSubagent: record.isSubagent,
+        agentNickname: record.agentNickname,
+        agentRole: record.agentRole,
+        subagentDepth: record.subagentDepth,
+        subagentCount: record.subagentCount ?? 0,
         firstTimestamp: record.timestamp,
         lastTimestamp: record.timestamp,
         recordCount: 0
@@ -171,6 +177,20 @@ export function aggregate(
     if (record.timestamp < sessAgg.firstTimestamp) sessAgg.firstTimestamp = record.timestamp
     if (record.timestamp > sessAgg.lastTimestamp) sessAgg.lastTimestamp = record.timestamp
     if (!sessAgg.cwd && record.cwd) sessAgg.cwd = record.cwd
+    if (!sessAgg.parentSessionId && record.parentSessionId) sessAgg.parentSessionId = record.parentSessionId
+    if (record.isSubagent) sessAgg.isSubagent = true
+    if (!sessAgg.agentNickname && record.agentNickname) sessAgg.agentNickname = record.agentNickname
+    if (!sessAgg.agentRole && record.agentRole) sessAgg.agentRole = record.agentRole
+    if (sessAgg.subagentDepth === undefined && record.subagentDepth !== undefined) {
+      sessAgg.subagentDepth = record.subagentDepth
+    }
+    if (record.subagentCount) sessAgg.subagentCount = Math.max(sessAgg.subagentCount ?? 0, record.subagentCount)
+  }
+
+  for (const record of records) {
+    if (!passesFilter(record, filter) || !record.isSubagent || !record.parentSessionId) continue
+    const parent = sessions.get(record.parentSessionId)
+    if (parent) parent.subagentCount = (parent.subagentCount ?? 0) + 1
   }
 
   // session counts per source

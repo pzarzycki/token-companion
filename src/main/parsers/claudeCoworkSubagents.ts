@@ -1,6 +1,6 @@
 import { basename, dirname, join } from 'node:path'
 import { promises as fs } from 'node:fs'
-import type { ConversationEntry, CoworkSubagentTrace, SessionEntries } from '@shared/types'
+import type { ConversationEntry, SessionEntries, SubagentTrace } from '@shared/types'
 import { num, readJsonlObjects, str } from './jsonlReader'
 import { parseClaudeTranscriptEntries } from './sessionEntries'
 
@@ -193,7 +193,7 @@ export async function parseClaudeCoworkSessionEntries(
   const entries = await parseClaudeTranscriptEntries(filePath, cliSessionId)
   const tasks = await collectTasks(filePath)
   const subagentFiles = await findSubagentFiles(sessionDir)
-  const subagents: CoworkSubagentTrace[] = []
+  const subagents: SubagentTrace[] = []
 
   for (const task of tasks.values()) {
     const subagentFile = subagentFiles.get(task.taskId)
@@ -218,6 +218,7 @@ export async function parseClaudeCoworkSessionEntries(
     }
 
     subagents.push({
+      source: 'claude-cowork',
       agentId: task.taskId,
       taskId: task.taskId,
       toolUseId: task.toolUseId,
@@ -232,6 +233,7 @@ export async function parseClaudeCoworkSessionEntries(
       stepCount: task.stepCount,
       models,
       ...tokens,
+      reasoningTokens: 0,
       entries: agentEntries
     })
   }
