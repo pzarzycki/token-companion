@@ -29,28 +29,9 @@ Local, privacy-first desktop analytics for Claude and Codex usage records alread
 
 ## Install
 
-There are two normal install paths:
+Use the source-first install paths below. The full platform matrix, including release artifacts, lives in the install docs.
 
-1. Download the latest release artifact for your platform.
-2. Build locally from source with `npx`.
-
-### Option 1: direct download
-
-Current release: `v0.1.7`
-
-- macOS ARM64 DMG: [Token.Companion-0.1.7-mac-arm64.dmg](https://github.com/pzarzycki/token-companion/releases/download/v0.1.7/Token.Companion-0.1.7-mac-arm64.dmg)
-- Windows x64 installer: [Token.Companion-0.1.7-win-x64.exe](https://github.com/pzarzycki/token-companion/releases/download/v0.1.7/Token.Companion-0.1.7-win-x64.exe)
-- Linux amd64 DEB: [Token.Companion-0.1.7-linux-amd64.deb](https://github.com/pzarzycki/token-companion/releases/download/v0.1.7/Token.Companion-0.1.7-linux-amd64.deb)
-- Linux x86_64 RPM: [Token.Companion-0.1.7-linux-x86_64.rpm](https://github.com/pzarzycki/token-companion/releases/download/v0.1.7/Token.Companion-0.1.7-linux-x86_64.rpm)
-- Checksums: [SHA256SUMS](https://github.com/pzarzycki/token-companion/releases/download/v0.1.7/SHA256SUMS)
-
-Warning:
-
-- macOS builds are ad-hoc signed for bundle integrity but are not notarized. Gatekeeper may still block first launch because the app is not notarized. If it does, open the app from Finder with control-click -> `Open`, or allow it in System Settings.
-- Windows builds are unsigned unless the GitHub Actions runner is given `WINDOWS_SIGNING_CERT_BASE64` and `WINDOWS_SIGNING_CERT_PASSWORD` secrets. A self-signed certificate will sign the binary, but SmartScreen will still show `More info` -> `Run anyway` unless the certificate chains to a trusted publisher.
-- Linux packages are convenience artifacts, not signed distro packages. Verify `SHA256SUMS` before installing.
-
-### Option 2: build locally with `npx`
+### Option 1: build locally with `npx`
 
 Prerequisite: Node.js 22.12.0 or newer. `npm` and `npx` are included with the standard Node.js install. Install Node.js from https://nodejs.org/en/download if `npx` is missing.
 
@@ -74,6 +55,27 @@ What the npm package actually is:
 - `token-companion` on npm is a small bootstrapper package, not the Electron app bundle and not the full source tree.
 - `npx token-companion@latest` downloads the matching GitHub source tag, runs the checked-in installer, builds the app locally, and then installs the built desktop app for the current OS.
 - The npm package exists to give users a one-line entry point with normal npm tooling while keeping the app itself open-source and locally built.
+
+### Option 2: run the checked-in wrapper script
+
+Use the repo script if you want the same tagged-source installer flow without invoking the npm bootstrapper command directly.
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+macOS / Linux:
+
+```bash
+sh install.sh
+```
+
+Useful script flags:
+
+- Windows: `-Version <ref>`, `-DryRun`, `-PackageOnly`, `-InstallDir <path>`
+- macOS / Linux: `--version <ref>`, `--dry-run`, `--package-only`, `--install-dir <path>`
 
 Install details: [docs](https://pzarzycki.github.io/token-companion/install/).
 
