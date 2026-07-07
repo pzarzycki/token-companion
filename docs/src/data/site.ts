@@ -1,6 +1,3 @@
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
 export const siteName = "Token Companion";
 export const siteDescription =
   "Desktop app that reads local Claude and Codex usage records, applies editable pricing, and keeps the session evidence behind each total inspectable.";
@@ -11,23 +8,22 @@ export const actionsUrl = `${repoUrl}/actions`;
 export const buildWorkflowUrl = `${repoUrl}/actions/workflows/build.yml`;
 export const licenseUrl = `${repoUrl}/blob/main/LICENSE`;
 
-function readReleasePackageVersion() {
-  const candidates = [resolve(process.cwd(), "package.json"), resolve(process.cwd(), "..", "package.json")];
-
-  for (const candidate of candidates) {
-    if (!existsSync(candidate)) continue;
-    const parsed = JSON.parse(readFileSync(candidate, "utf8")) as { name?: string; version?: string };
-    if (parsed.name === "token-companion-desktop" && parsed.version) {
-      return parsed.version;
-    }
+function normalizeReleaseTag(raw: string): string {
+  const normalized = raw.trim();
+  if (!/^v?\d+\.\d+\.\d+$/.test(normalized)) {
+    throw new Error(`Invalid Token Companion release tag: ${raw}`);
   }
-
-  throw new Error("Could not resolve the Token Companion release version from package.json.");
+  return normalized.startsWith("v") ? normalized : `v${normalized}`;
 }
 
-const packageJson = { version: readReleasePackageVersion() };
-export const releaseVersion = packageJson.version;
-export const latestTag = `v${releaseVersion}`;
+function resolveReleaseTag(): string {
+  const fromEnv = process.env.TOKEN_COMPANION_RELEASE_TAG?.trim();
+  if (fromEnv) return normalizeReleaseTag(fromEnv);
+  throw new Error("TOKEN_COMPANION_RELEASE_TAG is required for docs builds.");
+}
+
+export const latestTag = resolveReleaseTag();
+export const releaseVersion = latestTag.replace(/^v/, "");
 export const releaseDownloadsBaseUrl = `${repoUrl}/releases/download/${latestTag}`;
 export const checksumUrl = `${releaseDownloadsBaseUrl}/SHA256SUMS`;
 

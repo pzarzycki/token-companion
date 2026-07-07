@@ -5,8 +5,9 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
-      - 'package.json'
       - '.github/workflows/docs.yml'
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -36,6 +37,28 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+
+      - name: Resolve release tag
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "release" ]]; then
+            TAG="${RELEASE_TAG:-}"
+          else
+            TAG="$(gh release view --json tagName --jq .tagName)"
+          fi
+
+          if [[ -z "$TAG" ]]; then
+            echo "Could not resolve published release tag" >&2
+            exit 1
+          fi
+
+          echo "TOKEN_COMPANION_RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: npm ci --prefix docs --cache docs/.npm-cache
