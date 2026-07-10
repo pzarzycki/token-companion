@@ -43,7 +43,7 @@ Useful flags:
 
 ```bash
 npx token-companion@latest --dry-run
-npx token-companion@latest --version v0.1.8
+npx token-companion@latest --version v0.1.9
 ```
 
 - `--dry-run`: print checks, build commands, and install target.
@@ -192,7 +192,7 @@ Trusted Publishing setup:
 Why the installer downloads GitHub source:
 
 - The published npm package intentionally stays small and only contains the installer entry point.
-- The real application source is taken from the matching GitHub tag tarball such as `https://github.com/pzarzycki/token-companion/archive/refs/tags/v0.1.8.tar.gz`.
+- The real application source is taken from the matching GitHub tag tarball such as `https://github.com/pzarzycki/token-companion/archive/refs/tags/v0.1.9.tar.gz`.
 - This keeps the published npm artifact small, makes the release source explicit, and ensures the local build uses the same tagged source as the GitHub release.
 
 Recovery path:
