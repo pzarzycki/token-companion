@@ -17,6 +17,7 @@ const macHelperBundleNames = [
   'Token Companion Helper (Plugin).app'
 ]
 const macHelperBundleIdPrefix = `${macBundleId}.helper`
+const quiet = process.env.TOKEN_COMPANION_QUIET === '1'
 let npmCliPath
 
 const supportedPlatforms = new Set(['win', 'mac', 'linux'])
@@ -33,7 +34,7 @@ if (!supportedArches.has(archArg)) {
 }
 
 main().catch((error) => {
-  console.error(error)
+  console.error(error instanceof Error ? error.message : error)
   process.exit(1)
 })
 
@@ -86,25 +87,38 @@ function archFlag(arch) {
 }
 
 function run(command, args, extraEnv = {}) {
-  console.log(`> ${[command, ...args].join(' ')}`)
+  if (!quiet) console.log(`> ${[command, ...args].join(' ')}`)
   const result = spawn(command, args, {
     cwd: root,
     env: { ...process.env, ...extraEnv },
-    stdio: 'inherit'
+    stdio: quiet ? 'pipe' : 'inherit',
+    encoding: quiet ? 'utf8' : undefined
   })
-  if (result.status !== 0) process.exit(result.status ?? 1)
+  if (result.status !== 0) failCommand(command, args, result)
 }
 
 function runBuilder(args, extraEnv = {}) {
   const builderCli = join(root, 'node_modules', 'electron-builder', 'cli.js')
-  console.log(`> node ${[builderCli, ...args].join(' ')}`)
+  if (!quiet) console.log(`> node ${[builderCli, ...args].join(' ')}`)
   const result = spawnSync(process.execPath, [builderCli, ...args], {
     cwd: root,
     env: { ...process.env, ...extraEnv },
-    stdio: 'inherit'
+    stdio: quiet ? 'pipe' : 'inherit',
+    encoding: quiet ? 'utf8' : undefined
   })
   if (result.error) throw result.error
-  if (result.status !== 0) process.exit(result.status ?? 1)
+  if (result.status !== 0) failCommand(process.execPath, [builderCli, ...args], result)
+}
+
+function failCommand(command, args, result) {
+  const message = [`Command failed: ${[command, ...args].join(' ')}`]
+  if (quiet) {
+    const stdout = result.stdout?.trim()
+    const stderr = result.stderr?.trim()
+    if (stdout) message.push(`\nstdout:\n${stdout}`)
+    if (stderr) message.push(`\nstderr:\n${stderr}`)
+  }
+  throw new Error(message.join('\n'))
 }
 
 function spawn(command, args, options = {}) {
@@ -170,7 +184,7 @@ async function repairMacApp(appPath) {
     throw new Error('macOS bundle repair requires a macOS runner')
   }
 
-  console.log(`Repairing macOS app bundle: ${appPath}`)
+  if (!quiet) console.log(`Repairing macOS app bundle: ${appPath}`)
   await validateMacBundleShape(appPath)
   await stripMacSignatures(appPath)
 
@@ -212,7 +226,7 @@ async function stripMacSignatures(appPath) {
   const targets = await macSignatureTargets(appPath)
   for (const target of targets) {
     if (hasCodeSignature(target)) {
-      console.log(`Removing signature: ${target}`)
+      if (!quiet) console.log(`Removing signature: ${target}`)
       run('codesign', ['--remove-signature', target])
     }
   }
@@ -223,7 +237,7 @@ async function stripMacSignatures(appPath) {
   })
 
   for (const stalePath of staleSignaturePaths.sort((left, right) => right.length - left.length)) {
-    console.log(`Removing stale signature data: ${stalePath}`)
+    if (!quiet) console.log(`Removing stale signature data: ${stalePath}`)
     await fs.rm(stalePath, { recursive: true, force: true })
   }
 }

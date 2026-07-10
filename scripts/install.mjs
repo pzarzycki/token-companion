@@ -10,7 +10,7 @@ const platform = process.platform
 const arch = process.arch
 const macBuildMetaPath = join(root, 'out', 'mac-build.json')
 
-const options = parseArgs(process.argv.slice(2))
+let options
 let npmCliPath
 
 function parseArgs(args) {
@@ -18,6 +18,7 @@ function parseArgs(args) {
     dryRun: false,
     packageOnly: false,
     installDir: undefined,
+    verbose: false,
     help: false
   }
 
@@ -25,6 +26,7 @@ function parseArgs(args) {
     const arg = args[i]
     if (arg === '--dry-run') out.dryRun = true
     else if (arg === '--package-only') out.packageOnly = true
+    else if (arg === '--verbose') out.verbose = true
     else if (arg === '--help' || arg === '-h') out.help = true
     else if (arg === '--install-dir') out.installDir = requireValue(args, ++i, arg)
     else if (arg.startsWith('--install-dir=')) out.installDir = arg.slice('--install-dir='.length)
@@ -52,6 +54,7 @@ Options:
   --dry-run              Print commands and install targets without building.
   --package-only         Build packages but do not copy/install the built app.
   --install-dir <path>   Install destination. Supported on macOS only.
+  --verbose              Stream detailed build command output.
   --help                 Show this help.
 `)
 }
@@ -60,8 +63,21 @@ function commandLine(command, args) {
   return [command, ...args.map((arg) => (/\s/.test(arg) ? JSON.stringify(arg) : arg))].join(' ')
 }
 
+function logStep(message) {
+  console.log(message)
+}
+
 function shellPath(filePath) {
   return /\s/.test(filePath) ? JSON.stringify(filePath) : filePath
+}
+
+function printSuccess(lines) {
+  console.log('')
+  console.log('╭────────────────────────────────────────────╮')
+  console.log('│  TOKEN COMPANION                           │')
+  console.log('│  Install complete. Local traces unlocked.  │')
+  console.log('╰────────────────────────────────────────────╯')
+  for (const line of lines) console.log(line)
 }
 
 function spawnCommand(command) {
@@ -95,18 +111,29 @@ function commandInvocation(command, args) {
 }
 
 function run(command, args, runOptions = {}) {
-  console.log(`> ${commandLine(command, args)}`)
+  if (runOptions.label) logStep(runOptions.label)
+  if (options.verbose || options.dryRun) console.log(`> ${commandLine(command, args)}`)
   if (options.dryRun) return
 
   const invocation = commandInvocation(command, args)
   const result = spawnSync(invocation.command, invocation.args, {
     cwd: runOptions.cwd ?? root,
     env: { ...process.env, ...runOptions.env },
-    stdio: 'inherit'
+    stdio: options.verbose ? 'inherit' : 'pipe',
+    encoding: options.verbose ? undefined : 'utf8'
   })
 
   if (result.error) throw result.error
-  if (result.status !== 0) process.exit(result.status ?? 1)
+  if (result.status !== 0) {
+    const message = [`Command failed: ${commandLine(command, args)}`]
+    if (!options.verbose) {
+      const stdout = result.stdout?.trim()
+      const stderr = result.stderr?.trim()
+      if (stdout) message.push(`\nstdout:\n${stdout}`)
+      if (stderr) message.push(`\nstderr:\n${stderr}`)
+    }
+    throw new Error(message.join('\n'))
+  }
 }
 
 function hasCommand(command, args = ['--version']) {
@@ -131,7 +158,9 @@ async function assertRepoShape() {
 }
 
 function installCommand() {
-  return existsSync(join(root, 'package-lock.json')) ? ['ci'] : ['install']
+  const command = existsSync(join(root, 'package-lock.json')) ? ['ci'] : ['install']
+  if (!options.verbose) command.push('--no-audit', '--fund=false', '--loglevel=error')
+  return command
 }
 
 function assertSupportedPlatform() {
@@ -243,6 +272,7 @@ async function installMacApp() {
 
   await fs.mkdir(installDir, { recursive: true })
   await fs.rm(dest, { recursive: true, force: true })
+  logStep('Installing application...')
   await copyMacAppBundle(app, dest)
   normalizeMacAppBundleMetadata(dest)
   resignMacApp(dest)
@@ -252,7 +282,10 @@ async function installMacApp() {
   } else {
     console.log(`Installed Token Companion to ${dest}`)
   }
-  console.log(`Run it now with: open ${shellPath(dest)}`)
+  printSuccess([
+    `First launch: run this terminal command: open ${shellPath(dest)}`,
+    'After that, press Command-Space and search for "Token Companion".'
+  ])
 }
 
 async function copyMacAppBundle(source, dest) {
@@ -322,6 +355,10 @@ async function runWindowsInstaller() {
   console.log(`Windows installer: ${installer}`)
   if (options.dryRun || options.packageOnly) return
   run(installer, [])
+  printSuccess([
+    'Open it from the Start Menu by searching for "Token Companion".',
+    'Or run this terminal command: token-companion'
+  ])
 }
 
 async function installLinuxPackage() {
@@ -344,6 +381,10 @@ async function installLinuxPackage() {
   if (selected.endsWith('.deb')) run('sudo', ['apt', 'install', '-y', selected])
   else if (hasCommand('dnf')) run('sudo', ['dnf', 'install', '-y', selected])
   else run('sudo', ['rpm', '-Uvh', selected])
+  printSuccess([
+    'Open it from your application launcher by searching for "Token Companion".',
+    'Or run this terminal command: token-companion'
+  ])
 }
 
 async function installBuiltArtifact() {
@@ -368,6 +409,8 @@ async function installBuiltArtifact() {
 }
 
 async function main() {
+  options = parseArgs(process.argv.slice(2))
+
   if (options.help) {
     usage()
     return
@@ -381,15 +424,19 @@ async function main() {
   console.log(`Platform: ${platform}/${arch}`)
   assertPrereqs()
 
-  run('npm', installCommand())
-  run('npm', ['run', 'typecheck'])
+  run('npm', installCommand(), { label: 'Installing dependencies...' })
+  run('npm', ['run', 'typecheck'], { label: 'Running typecheck...' })
   run('npm', ['run', makeScriptName()], {
-    env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
+    label: 'Building application...',
+    env: {
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false',
+      TOKEN_COMPANION_QUIET: options.verbose ? '0' : '1'
+    }
   })
   await installBuiltArtifact()
 }
 
 main().catch((error) => {
-  console.error(error)
+  console.error(error instanceof Error ? error.message : error)
   process.exit(1)
 })
